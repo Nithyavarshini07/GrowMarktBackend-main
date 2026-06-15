@@ -1,0 +1,463 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap');
+
+:root {
+  --primary-dark: #0a1f33;
+  --accent-green: #15803d;
+  --text-gray: #4b5563;
+  --bg-light: #f8fafc;
+}
+
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+body,
+html {
+   margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-light);
+}
+
+.trial {
+  color: #64748b;
+  /* Increased font size for better readability */
+  font-size: 1rem; 
+  margin-bottom: 25px;
+  font-family: 'Inter', sans-serif;
+}
+
+/* MAIN CONTAINER */
+.init-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(105deg, #ffffff 65%, #f8fafc 65.1%);
+}
+
+/* LEFT SECTION */
+.init-left {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 40px 60px 40px 160px;
+
+  background:
+    radial-gradient(circle at bottom left, rgba(21,128,61,0.18), transparent 40%),
+    linear-gradient(135deg, #e6f9f0 0%, #ffffff 55%);
+}
+
+/* MOVE LOGO SLIGHTLY DOWN */
+.init-logo {
+  font-family: 'Inter', sans-serif;
+  font-size: 21.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0a1629;
+
+  position: absolute;
+
+  top: 32px !important;   /* slightly lower */
+  left: 40px !important;
+
+  margin: 0;
+  padding: 0;
+
+  line-height: 1.1;
+  z-index: 10;
+}
+
+
+/* HERO CONTENT */
+.init-hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  margin-top: 15px;
+  margin-bottom: 60px;
+}
+
+.init-title {
+  font-family: 'Manrope', sans-serif;
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -1.2px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.init-title span {
+  color: var(--accent-green);
+  font-family: 'Manrope', sans-serif;
+}
+
+/* DESCRIPTION */
+.init-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #5e6c84;
+  max-width: 440px;
+  margin-top: 15px;
+  margin-bottom: 25px;
+}
+
+/* FEATURES */
+.init-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding-left: 3px;
+  margin-top: 18px;
+}
+
+.init-feature h3,
+.init-feature h4 {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.init-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;     /* Proper icon size */
+  color: white;
+}
+
+.init-dark {
+  background: #0a1629;
+}
+
+.init-green {
+  background: #15803d;
+}
+.init-feature-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.init-feature p {
+  margin: 4px 0 0 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #64748b;
+  max-width: 650px;
+}
+
+/* TESTIMONIAL */
+.init-testimonial {
+margin-top: 10px; 
+  width: 100%;
+  max-width: 600px; 
+  padding: 20px 30px;
+
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+}
+
+.init-testimonial p {
+  font-family: 'Inter', sans-serif;
+  font-style: italic;
+  font-size: 0.95rem;    /* Made smaller from 1.1rem/1.25rem */
+  color: #64748b;
+  line-height: 1.4;      /* Tighter line height */
+  margin-bottom: 15px; 
+}
+
+/* USER */
+.init-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.init-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.init-user .init-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  overflow: hidden; /* This makes the image follow the rounded corners */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f1f5f9; /* If you see this gray, the path is still broken */
+}
+
+.init-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.init-user strong {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0a1629;
+}
+
+.init-user span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* RIGHT SECTION */
+.init-right {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* CARD */
+.init-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 45px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+  text-align: left;
+  margin-top: -40px;
+  z-index: 2;
+}
+
+.init-card h2 {
+  font-family: 'Manrope', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0a1629;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.init-trial {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+/* INPUTS */
+.init-card input {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: #f0f7ff;
+  font-size: 0.95rem;
+  color: #000000 !important;
+  caret-color: #000000;
+}
+
+.init-card input:focus {
+  outline: none;
+  color: #000000;
+  background-color: #f0f7ff;
+}
+
+/* CHECKBOX */
+.init-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  position: relative;
+}
+
+.init-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.init-checkmark {
+  height: 14px;
+  width: 14px;
+  background-color: transparent;
+  border: 1.5px solid #000000;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.init-checkbox input:checked ~ .init-checkmark {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.init-checkmark:after {
+  content: "";
+  display: none;
+  width: 3px;
+  height: 6px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.init-checkbox input:checked ~ .init-checkmark:after {
+  display: block;
+}
+
+.init-checkbox span:last-child {
+  font-size: 10px;
+  color: #4b5563;
+  line-height: 1;
+}
+
+/* BUTTON */
+.init-btn {
+  width: 100%;
+  padding: 15px;
+  background-color: #0a1629;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* DIVIDER */
+.init-or {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 15px 0;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.init-or::before,
+.init-or::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* SOCIAL LOGIN */
+.init-social-login {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.init-social-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background-color: #f0f7ff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.init-social-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+/* LOGIN TEXT */
+.init-login {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.init-login span {
+  font-weight: 700;
+  color: #0a1629;
+  cursor: pointer;
+}
+
+/* FOOTER */
+.init-page-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 40px;
+  font-size: 0.65rem;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.05);
+}
+
+.init-footer-links {
+  display: flex;
+  gap: 20px;
+}
+
+.init-footer-links a {
+  text-decoration: none;
+  color: #999;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+}
+
+.init-footer-text {
+  margin-left: 200px;
+}
+.init-page-footer {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.65rem;
+}

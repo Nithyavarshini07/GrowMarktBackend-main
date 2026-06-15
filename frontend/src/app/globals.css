@@ -1,0 +1,111 @@
+/* Google Fonts — must be first before any @tailwind rules */
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Base Reset & Typography ─────────────────────────────────────────────── */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface text-on-surface min-h-screen selection:bg-secondary-container/50;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Manrope', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Scrollbar customization */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-container-low bg-opacity-50;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-outline-variant bg-opacity-50 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-outline-variant;
+  }
+}
+
+/* ── Component Utilities ─────────────────────────────────────────────────── */
+@layer components {
+  /* Cards */
+  .card {
+    @apply bg-surface-bright rounded-2xl shadow-glass transition-all duration-300;
+  }
+  
+  .card-container {
+    @apply bg-surface-container-low p-4 sm:p-6 rounded-3xl border border-outline-variant/15;
+  }
+
+  .card-hover {
+    @apply card hover:bg-surface-bright hover:-translate-y-0.5 hover:shadow-xl;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full bg-surface-container-low border-none rounded-xl px-4 py-3
+           text-on-surface placeholder-on-surface/50
+           focus:outline-none focus:bg-surface-bright focus:ring-[2px] focus:ring-primary/40 focus:border-transparent
+           transition-all duration-200;
+  }
+
+  .label {
+    @apply block text-xs tracking-[0.05em] uppercase font-medium text-on-surface/70 mb-2;
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2
+           bg-gradient-primary text-white rounded-[0.75rem] px-6 py-3
+           font-bold text-sm tracking-wider uppercase
+           shadow-lg shadow-primary/20
+           transition-all duration-200 hover:-translate-y-[1px] hover:shadow-primary/30 active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2
+           bg-transparent border border-outline-variant/20
+           text-on-surface font-semibold px-6 py-3 rounded-[0.75rem]
+           transition-all duration-200 hover:bg-secondary-fixed-dim/10 hover:-translate-y-[1px] active:scale-[0.99]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Glassmorphism panel */
+  .glass {
+    @apply bg-surface-bright/70 backdrop-blur-xl border border-outline-variant/15;
+  }
+
+  .glass-card {
+    @apply bg-surface-bright/70 backdrop-blur-[12px] border border-outline-variant/10 rounded-[1.5rem] shadow-glass;
+  }
+
+  .shadow-glass { 
+    box-shadow: 0 8px 32px 0 rgba(0, 21, 42, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+.perspective-2000 { perspective: 2000px; }
+.perspective-3d { transform-style: preserve-3d; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 21, 42, 0.1); border-radius: 10px; }
