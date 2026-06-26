@@ -56,14 +56,15 @@ export function authenticate(
     req.role = decoded.role;
     next();
   } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      next(new UnauthorizedError("Invalid token"));
-      return;
-    }
-    if (error instanceof jwt.TokenExpiredError) {
-      next(new UnauthorizedError("Token expired"));
-      return;
-    }
+if (error instanceof jwt.TokenExpiredError) {
+  next(new UnauthorizedError("Token expired"));
+  return;
+}
+
+if (error instanceof jwt.JsonWebTokenError) {
+  next(new UnauthorizedError("Invalid token"));
+  return;
+}
     next(error);
   }
 }

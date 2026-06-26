@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { authenticate, requireRole } from "@/middleware/auth.middleware";
-import { getActivityFeed } from "@/controllers/activity.controller";
+import { authenticate, requireRole } from "../middleware/auth.middleware";
+import { getActivityFeed } from "../controllers/activity.controller";
 
 const router = Router();
 
