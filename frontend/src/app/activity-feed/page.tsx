@@ -37,7 +37,6 @@ const loadActivity = async () => {
   try {
     setLoading(true);
 
-
     const profileData = await api.auth.profile();
     const activityData = await api.activity.get();
     console.log("Activity Data:", activityData);

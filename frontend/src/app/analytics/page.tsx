@@ -1,296 +1,402 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import AppNav from "@/components/AppNav";
 
-/* ─── Animated counter ───────────────────────────────────────── */
-function AnimCount({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!to) return;
-    let cur = 0;
-    const step = to / 36;
-    const t = setInterval(() => {
-      cur += step;
-      if (cur >= to) { setV(to); clearInterval(t); }
-      else setV(Math.floor(cur));
-    }, 18);
-    return () => clearInterval(t);
-  }, [to]);
-  return <>{v.toLocaleString()}{suffix}</>;
-}
+import "./Analytics.css";
 
-/* ─── Animated bar ───────────────────────────────────────────── */
-function Bar({ pct, color }: { pct: number; color: string }) {
-  const [w, setW] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setW(pct), 150); return () => clearTimeout(t); }, [pct]);
-  return (
-    <div className="h-2 rounded-full bg-surface-container-high overflow-hidden">
-      <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${w}%`, backgroundColor: color }} />
-    </div>
-  );
-}
-
-/* ─── Inline SVG sparkline ───────────────────────────────────── */
-function Sparkline({ vals, color }: { vals: number[]; color: string }) {
-  if (vals.length < 2) return null;
-  const max = Math.max(...vals) || 1;
-  const w = 100 / (vals.length - 1);
-  const pts = vals.map((v, i) => `${i * w},${100 - (v / max) * 80}`).join(" ");
-  const fill = pts + ` ${(vals.length - 1) * w},100 0,100`;
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
-      <defs>
-        <linearGradient id={`sg-${color.replace("#", "")}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={fill} fill={`url(#sg-${color.replace("#", "")})`} />
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/* ─── Donut ring ─────────────────────────────────────────────── */
-function Donut({ segments }: { segments: { value: number; color: string; label: string }[] }) {
-  const [go, setGo] = useState(false);
-  useEffect(() => { const t = setTimeout(() => setGo(true), 200); return () => clearTimeout(t); }, []);
-  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
-  let cursor = 0;
-  return (
-    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-      {segments.map((s, i) => {
-        const pct = (s.value / total) * 100;
-        const dash = go ? pct : 0;
-        const off = -cursor;
-        cursor += pct;
-        return (
-          <circle key={i} cx="18" cy="18" r="14" fill="none" stroke={s.value ? s.color : "transparent"}
-            strokeWidth="3.5" strokeDasharray={`${dash} ${100 - dash}`} strokeDashoffset={off}
-            strokeLinecap="round"
-            style={{ transition: `stroke-dasharray 1s ease ${i * 0.12}s` }} />
-        );
-      })}
-    </svg>
-  );
-}
 
 export default function AnalyticsPage() {
-  const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [metric, setMetric] = useState<"posts" | "published" | "scheduled">("posts");
+ const router = useRouter();
 
-  useEffect(() => { if (!authLoading && !user) router.push("/login"); }, [user, authLoading, router]);
-  useEffect(() => {
-    if (user) api.analytics.get().then((d: any) => { setData(d); setLoading(false); }).catch(() => setLoading(false));
-  }, [user]);
+const { user, loading: authLoading } = useAuth();
 
-  const st = data?.stats ?? {};
-  const ts = data?.timeSeries ?? [];
-  const pb = data?.platformBreakdown ?? [];
-  const sb = data?.statusBreakdown ?? [];
-  const da = data?.dayActivity ?? [];
+useEffect(() => {
+  if (!authLoading && !user) {
+    router.push("/login");
+  }
+}, [user, authLoading, router]);
 
-  const chartVals = ts.map((t: any) => t[metric] ?? 0);
-  const metricTotal = ts.reduce((s: number, t: any) => s + (t[metric] ?? 0), 0);
+if (authLoading || !user) return null;
 
-  const kpis = [
-    { label: "Total Posts", value: st.totalPosts ?? 0, note: `${st.draftPosts ?? 0} drafts`, color: "#00152a" },
-    { label: "Published", value: st.publishedPosts ?? 0, note: `${st.successRate ?? 0}% success rate`, color: "#006e2f" },
-    { label: "Scheduled", value: st.scheduledPosts ?? 0, note: "Pending publish", color: "#102a43" },
-    { label: "Failed", value: st.failedPosts ?? 0, note: "Needs attention", color: "#ba1a1a" },
-  ];
-
-  const METRIC_OPTIONS = [
-    { key: "posts" as const, label: "All Posts", color: "#00152a" },
-    { key: "published" as const, label: "Published", color: "#006e2f" },
-    { key: "scheduled" as const, label: "Scheduled", color: "#102a43" },
-  ];
-  const activeColor = METRIC_OPTIONS.find(m => m.key === metric)?.color ?? "#00152a";
-
-  if (authLoading || !user) return null;
-
+  function IconSearch(props) {
   return (
-    <div className="min-h-screen bg-surface text-on-surface">
-      <AppNav />
-      <main className="ml-64 pt-20 pb-16 px-8">
-
-        {/* Header */}
-        <div className="mb-10 relative">
-          <div className="absolute -left-8 top-0 w-1 h-full rounded-full" style={{ background: "linear-gradient(180deg, #00152a, #006e2f)" }} />
-          <p className="text-[10px] uppercase tracking-[0.3em] text-secondary font-body font-semibold mb-1.5">Performance Overview</p>
-          <h1 className="font-display text-4xl font-extrabold text-primary leading-tight">Analytics</h1>
-          <p className="text-on-surface-variant text-sm font-body mt-2 max-w-lg">
-            All data is live from your account — posts, platforms, and publishing activity.
-          </p>
-        </div>
-
-        {/* KPI row */}
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-          {kpis.map((k, i) => (
-            <div key={k.label}
-              className="relative rounded-2xl p-6 bg-surface-container-lowest border border-outline-variant/10 shadow-glass overflow-hidden group hover:-translate-y-0.5 transition-transform cursor-default">
-              {/* accent bar */}
-              <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-2xl" style={{ backgroundColor: k.color }} />
-              <p className="text-[10px] uppercase tracking-widest font-body text-on-surface/50 mb-2">{k.label}</p>
-              <p className="font-display text-4xl font-extrabold text-primary leading-none mb-1.5">
-                {loading ? <span className="inline-block w-12 h-8 bg-surface-container-high rounded animate-pulse" /> : <AnimCount to={k.value} />}
-              </p>
-              <p className="text-[11px] font-body text-on-surface/40">{k.note}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Chart + Platform mix */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-
-          {/* Weekly chart */}
-          <div className="xl:col-span-2 rounded-2xl p-6 bg-surface-container-lowest border border-outline-variant/10 shadow-glass">
-            <div className="flex items-start justify-between mb-6">
-              <div>
-                <h2 className="font-display font-bold text-xl text-primary">Weekly Activity</h2>
-                <p className="text-on-surface/40 text-xs font-body mt-0.5">
-                  {loading ? "—" : `${metricTotal} total over last 8 weeks`}
-                </p>
-              </div>
-              <div className="flex gap-1.5 flex-wrap justify-end">
-                {METRIC_OPTIONS.map(m => (
-                  <button key={m.key} onClick={() => setMetric(m.key)}
-                    className="px-3 py-1.5 rounded-full text-[10px] font-body font-bold uppercase tracking-widest transition-all border"
-                    style={metric === m.key
-                      ? { backgroundColor: m.color, color: "#fff", borderColor: "transparent" }
-                      : { backgroundColor: "transparent", color: "rgba(11,28,48,0.5)", borderColor: "rgba(195,198,206,0.4)" }}>
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="h-24 rounded-xl bg-surface-container animate-pulse" />
-            ) : ts.length === 0 ? (
-              <div className="h-24 rounded-xl bg-surface-container flex items-center justify-center">
-                <p className="text-on-surface/30 font-body text-sm">No activity yet — start creating posts!</p>
-              </div>
-            ) : (
-              <>
-                <div className="h-24 mb-3">
-                  <Sparkline vals={chartVals} color={activeColor} />
-                </div>
-                <div className="flex justify-between px-0.5">
-                  {ts.map((t: any, i: number) => (
-                    <div key={i} className="text-center flex-1">
-                      <p className="font-display font-bold text-primary text-sm">{t[metric] ?? 0}</p>
-                      <p className="text-[9px] text-on-surface/30 font-body mt-0.5">{t.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Platform donut */}
-          <div className="rounded-2xl p-6 bg-surface-container-lowest border border-outline-variant/10 shadow-glass">
-            <h2 className="font-display font-bold text-lg text-primary mb-1">Platform Mix</h2>
-            <p className="text-on-surface/40 text-xs font-body mb-5">By posts created</p>
-            {loading ? (
-              <div className="h-40 rounded-xl bg-surface-container animate-pulse" />
-            ) : pb.every((p: any) => p.count === 0) ? (
-              <div className="h-40 flex items-center justify-center">
-                <p className="text-on-surface/30 font-body text-sm text-center">Create posts to see platform breakdown</p>
-              </div>
-            ) : (
-              <div className="flex items-center gap-5">
-                <div className="relative shrink-0 w-28 h-28">
-                  <Donut segments={pb.map((p: any) => ({ value: p.count, color: p.color, label: p.name }))} />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display font-bold text-primary text-lg">{st.totalPosts ?? 0}</span>
-                    <span className="text-[9px] text-on-surface/40 font-body uppercase tracking-widest">Posts</span>
-                  </div>
-                </div>
-                <div className="flex-1 space-y-2.5">
-                  {pb.map((p: any) => (
-                    <div key={p.key}>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-[11px] font-body text-on-surface/60">{p.name}</span>
-                        <span className="text-[11px] font-display font-bold text-primary">{p.count}</span>
-                      </div>
-                      <Bar pct={p.value} color={p.color} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Status + Day heatmap */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-
-          {/* Status breakdown */}
-          <div className="rounded-2xl p-6 bg-surface-container-lowest border border-outline-variant/10 shadow-glass">
-            <h2 className="font-display font-bold text-lg text-primary mb-1">Status Breakdown</h2>
-            <p className="text-on-surface/40 text-xs font-body mb-6">Cumulative post outcomes</p>
-            {loading
-              ? [...Array(4)].map((_, i) => <div key={i} className="h-8 rounded-xl bg-surface-container animate-pulse mb-3" />)
-              : sb.map((s: any) => (
-                <div key={s.label} className="mb-4 last:mb-0">
-                  <div className="flex justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-sm font-body text-on-surface/70">{s.label}</span>
-                    </div>
-                    <span className="text-sm font-display font-bold text-primary">{s.value}</span>
-                  </div>
-                  <Bar pct={st.totalPosts ? (s.value / st.totalPosts) * 100 : 0} color={s.color} />
-                </div>
-              ))}
-          </div>
-
-          {/* Day of week heatmap */}
-          <div className="rounded-2xl p-6 bg-surface-container-lowest border border-outline-variant/10 shadow-glass">
-            <h2 className="font-display font-bold text-lg text-primary mb-1">Best Days to Post</h2>
-            <p className="text-on-surface/40 text-xs font-body mb-6">Based on your actual creation history</p>
-            {loading ? (
-              <div className="h-28 rounded-xl bg-surface-container animate-pulse" />
-            ) : da.every((d: any) => d.count === 0) ? (
-              <div className="h-28 flex items-center justify-center">
-                <p className="text-on-surface/30 font-body text-sm">No history yet</p>
-              </div>
-            ) : (
-              <div className="flex items-end gap-2 h-28">
-                {da.map((d: any) => {
-                  const maxCount = Math.max(...da.map((x: any) => x.count)) || 1;
-                  const heightPct = (d.count / maxCount) * 100;
-                  const isMax = d.count === maxCount;
-                  return (
-                    <div key={d.label} className="flex flex-col items-center flex-1 gap-1.5">
-                      <span className="text-[10px] font-display font-bold text-primary opacity-60">{d.count || ""}</span>
-                      <div className="w-full rounded-t-lg transition-all duration-700" style={{
-                        height: `${Math.max(heightPct, 4)}%`,
-                        backgroundColor: isMax ? "#006e2f" : d.count > 0 ? "#102a43" : "#e5eeff",
-                        opacity: d.count > 0 ? 1 : 0.4,
-                      }} />
-                      <span className="text-[10px] font-body text-on-surface/50">{d.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {da.some((d: any) => d.count > 0) && (
-              <p className="mt-4 text-[11px] font-body text-secondary font-semibold">
-                ★ Best day: {da.reduce((best: any, d: any) => d.count > (best?.count ?? 0) ? d : best, null)?.label}
-              </p>
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M10.8 18.2a7.4 7.4 0 1 0 0-14.8 7.4 7.4 0 0 0 0 14.8Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M20.4 20.4l-3.9-3.9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
+  return (
+    <div className="analytics-page">
+      {/* SIDEBAR */}
+<aside className="sidebar">
+  <div className="brand-header">
+    <span className="brand-main">GrowMarkt</span>
+    <span className="brand-subtitle">THE DATA CURATOR</span>
+  </div>
+
+  <nav>
+    <ul>
+      <li onClick={() => router.push("/dashboard")}>
+        <img src="/assets/dashboard.png" alt="dashboard" className="nav-icon" />
+        DASHBOARD
+      </li>
+
+      <li onClick={() => router.push("/campaign-timeline")}>
+        <img src="/assets/campaign.png" alt="campaign" className="nav-icon" />
+        CAMPAIGN MANAGER
+      </li>
+
+      <li className="active" onClick={() => router.push("/analytics")}>
+        <img src="/assets/analytics.png" alt="analytics" className="nav-icon" />
+        ANALYTICS
+      </li>
+
+      <li onClick={() => router.push("/competitor-analysis")} style={{ cursor: "pointer" }}>
+        <img src="/assets/competition.png" alt="competitors" className="nav-icon" />
+        COMPETITORS
+      </li>
+
+      <li onClick={() => router.push("/settings")}>
+        <img src="/assets/settings.png" alt="settings" className="nav-icon" />
+        SETTINGS
+      </li>
+    </ul>
+  </nav>
+
+  <button className="campaign-btn">+ NEW CAMPAIGN</button>
+</aside>
+
+      {/* MAIN */}
+      <div className="analytics-main">
+ {/* TOPBAR */}
+<div className="analytics-topbar">
+  <div className="search-container">
+    <span className="search-icon">
+      <IconSearch />
+    </span>
+    <input placeholder="Search insights..." />
+  </div>
+
+  <div className="user-profile">
+    <div className="user-profile-left">
+      <div className="notif-icon">
+        <img src="/assets/bell.png" alt="notification" />
+        <span className="dot"></span>
+      </div>
+      <div className="profile-info">
+        <p className="user-name">Alex Mercer</p>
+        <p className="user-role">PREMIUM CURATOR</p>
+      </div>
+    </div>
+    <img src="/assets/alex.jpg" alt="avatar" className="avatar" />
+  </div>
+</div>
+
+        {/* HEADER */}
+        <div className="analytics-header">
+          <div className="header-left">
+            <h2>Growth Tracking</h2>
+            <span className="header-divider" aria-hidden="true" />
+          </div>
+          <div className="header-right">
+            <button className="add-btn">
+              <span className="btn-plus" aria-hidden="true">+</span>
+              <span>ADD METRIC</span>
+            </button>
+            <button className="date-filter">
+              <span className="date-icon" aria-hidden="true" />
+              <span>LAST 30 DAYS</span>
+            </button>
+            <div className="view-toggle">
+  <button className="toggle-btn" onClick={() => router.push("/analytics-dense")}>Dense</button>
+  <button className="toggle-btn active">Relaxed</button>
+</div>
+          </div>
+        </div>
+
+        {/* CARDS */}
+        <div className="analytics-cards">
+          {/* AGGREGATE */}
+          <div className="card">
+            <p className="metric-label">AGGREGATE REACH</p>
+            <div className="metric-value-row">
+              <h2>92,400</h2>
+              <span className="green">↑ 14%</span>
+            </div>
+            <svg className="sparkline-small" viewBox="-5 0 110 40">
+              <path d="M4,32 C16,30 26,30 35,24 C44,16 52,16 58,26 C64,34 72,35 80,17 C88,4 96,6 102,19" className="spark-green" fill="none"/>
+            </svg>
+          </div>
+
+          {/* INSTAGRAM */}
+          <div className="card">
+            <p className="metric-label">
+  <img src="/assets/instagram.png" className="card-icon" />
+  INSTAGRAM
+</p>
+            <div className="metric-value-row">
+              <h2>12.5k</h2>
+              <span className="green">+2.4%</span>
+            </div>
+            <svg className="sparkline-small" viewBox="-5 0 110 40">
+              <path d="M4,28 C14,24 22,22 31,25 C40,29 49,20 59,14 C69,10 79,15 89,12 C95,10 100,8 103,7" className="spark-pink" fill="none"/>
+            </svg>
+          </div>
+
+          {/* LINKEDIN */}
+          <div className="card">
+            <p className="metric-label">
+  <img src="/assets/linkedin2.png" className="card-icon" />
+  LINKEDIN
+</p>
+            <div className="metric-value-row">
+              <h2>4.2k</h2>
+              <span className="green">+5.1%</span>
+            </div>
+            <svg className="sparkline-small" viewBox="-5 0 110 40">
+             <path d="M4,30 C15,28 25,27 35,24 C45,21 54,18 64,15 C74,12 84,11 93,9 C98,8 101,7 103,7" className="spark-blue" fill="none"/>
+            </svg>
+          </div>
+
+          {/* X */}
+          <div className="card">
+            <p className="metric-label">
+  <img src="/assets/twitter.png" className="card-icon" />
+  X (TWITTER)
+</p>
+            <div className="metric-value-row">
+              <h2>28.9k</h2>
+              <span className="red">-0.4%</span>
+            </div>
+            <svg className="sparkline-small" viewBox="-5 0 110 40">
+              <path d="M4,12 C14,13 24,16 34,15 C44,14 53,17 63,19 C73,21 83,23 92,24 C98,25 101,26 103,27" className="spark-gray" fill="none"/>
+            </svg>
+          </div>
+        </div>
+
+        <div className="analytics-content">
+          {/* GRAPH */}
+          <div className="graph-box">
+            <div className="graph-header">
+  <div>
+    <h3>HISTORICAL GROWTH VS ENGAGEMENT</h3>
+    <p className="graph-sub">
+      Aggregated cross-platform analytics for current period
+    </p>
+  </div>
+
+  <div className="graph-icons">
+    <span>↻</span>
+    <span>⤢</span>
+    <span>⋯</span>
+  </div>
+</div>
+           <svg
+  className="line-chart"
+  viewBox="0 0 600 250"
+>
+ {/* grid */}
+<line x1="40" y1="40" x2="560" y2="40" className="grid" />
+<line x1="40" y1="90" x2="560" y2="90" className="grid" />
+<line x1="40" y1="140" x2="560" y2="140" className="grid" />
+<line x1="40" y1="190" x2="560" y2="190" className="grid" />
+
+{/* green line */}
+<path
+  d="M40 165
+     C90 150, 120 160, 170 150
+     C220 120, 240 55, 290 85
+     C340 125, 360 220, 410 165
+     C455 110, 485 10, 520 55"
+  className="line-green"
+/>
+
+{/* blue dashed line */}
+<path
+  d="M40 175
+     C90 170, 120 155, 170 150
+     C220 145, 250 145, 290 140
+     C340 138, 380 145, 420 125
+     C460 105, 490 85, 520 92"
+  stroke="#3b82f6"
+  strokeWidth="2.5"
+  strokeDasharray="6 6"
+  fill="none"
+/>
+</svg>
+            <div className="graph-labels">
+  <span>Sep 01</span>
+  <span>Sep 10</span>
+  <span>Sep 20</span>
+  <span>Sep 30</span>
+  <span>Oct 10</span>
+  <span>Oct 20</span>
+</div>
+          </div>
+
+          {/* SIDE PANEL */}
+          {/* SIDE PANEL */}
+<div className="side-box">
+  <div className="side-box-header">
+    <div className="title-with-icon">
+      <img src="/assets/shield.png" className="shield-icon" />
+      <h3>TOP PERFORMANCE NODES</h3>
+    </div>
+
+<button 
+  className="view-all" 
+  onClick={() => router.push("/PerformanceNodesLibrary")}
+>
+  VIEW ALL
+</button>
+  </div>
+
+  <div className="node-list">
+    {/* Node 1 */}
+    <div className="node-item">
+      <div className="node-thumb">
+  <img src="/assets/topp1.jpg" alt="Organic Reach" />
+</div>
+      <div className="node-info">
+        <strong>Organic Reach Surge</strong>
+        <p>Instagram Reel • 12.3k Reach</p>
+      </div>
+      <div className="node-trend">
+  <img src="/assets/trend-up.png" />
+</div>
+    </div>
+
+    {/* Node 2 */}
+    <div className="node-item">
+      <div className="node-thumb">
+  <img src="/assets/topp2.jpg" alt="Article" />
+</div>
+      <div className="node-info">
+        <strong>Curator Ethos Article</strong>
+        <p>LinkedIn Article • 8.4k Views</p>
+      </div>
+      <div className="node-trend">
+  <img src="/assets/trend-up.png" />
+</div>
+    </div>
+  </div>
+
+  <div className="benchmark-section">
+    <span className="benchmark-label">BENCHMARK STATUS</span>
+    <div className="benchmark-tag">
+      OUTPERFORMING (+8%)
+    </div>
+  </div>
+</div>
+        </div>
+
+        {/* LOGS */}
+        <div className="analytics-logs">
+          <div className="logs-header">
+            <div className="logs-title">
+              <h3>MONTHLY PERFORMANCE LOG</h3>
+              <p className="sub">Chronological analysis of growth events and revenue impact</p>
+            </div>
+            <div className="logs-actions">
+              <button className="log-btn">💾 EXPORT DATA</button>
+              <button className="log-btn">ALL PLATFORMS ▾</button>
+              <button className="log-btn">MONTHLY VIEW ▾</button>
+            </div>
+          </div>
+
+          {/* October Row */}
+          <div className="log-row">
+            <div className="log-col date">
+              <strong>October 2023</strong>
+              <p className="status-label">CURRENT PERIOD</p>
+            </div>
+            <div className="log-col growth">
+              <span className="label">NET GROWTH</span>
+              <span className="value positive">+2,451</span>
+            </div>
+            <div className="log-col revenue">
+              <span className="label">CONVERSION & REVENUE</span>
+              <span className="value">
+                <strong>3.4%</strong> $12,490
+              </span>
+            </div>
+            <div className="log-col spark">
+              <svg viewBox="0 0 100 30" className="log-sparkline">
+                <path d="M0,20 L20,15 L40,25 L60,10 L80,18 L100,5" fill="none" stroke="#10b981" strokeWidth="2" />
+              </svg>
+            </div>
+            <div className="log-arrow">›</div>
+          </div>
+
+          {/* September Row */}
+          <div className="log-row">
+            <div className="log-col date">
+              <strong>September 2023</strong>
+              <p className="status-label">PREVIOUS MONTH</p>
+            </div>
+            <div className="log-col growth">
+              <span className="label">NET GROWTH</span>
+              <span className="value positive">+1,892</span>
+            </div>
+            <div className="log-col revenue">
+              <span className="label">CONVERSION & REVENUE</span>
+              <span className="value">
+                <strong>2.9%</strong> $10,120
+              </span>
+            </div>
+            <div className="log-col spark">
+              <svg viewBox="0 0 100 30" className="log-sparkline">
+                <path d="M0,22 L20,12 L40,18 L60,25 L80,10 L100,8" fill="none" stroke="#10b981" strokeWidth="2" />
+              </svg>
+            </div>
+            <div className="log-arrow">›</div>
+          </div>
+
+          {/* August Row */}
+          {/* August Row */}
+<div className="log-row">
+  <div className="log-col date">
+    <strong>August 2023</strong>
+    <p className="status-label">HISTORIC</p>
+  </div>
+  <div className="log-col growth">
+    <span className="label">NET GROWTH</span>
+    {/* 🔥 Changed from 'positive' to 'negative' to make it red */}
+    <span className="value negative">+2,104</span> 
+  </div>
+  <div className="log-col revenue">
+    <span className="label">CONVERSION & REVENUE</span>
+    <span className="value">
+      <strong>3.1%</strong> $11,350
+    </span>
+  </div>
+  
+  <div className="log-col spark">
+    <svg viewBox="0 0 100 30" className="log-sparkline">
+      <path d="M0,5 L20,8 L40,25 L60,18 L80,22 L100,28" fill="none" stroke="#ef4444" strokeWidth="2" />
+    </svg>
+  </div>
+  <div className="log-arrow">›</div>
+</div>
+
+          <button className="load-more">LOAD MORE PERFORMANCE LOGS ▾</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
