@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import "./createUnifiedPost.css";
 
 
@@ -10,6 +11,10 @@ export default function CreateUnifiedPost() {
   const router = useRouter();
   const [selectedChannel, setSelectedChannel] = useState("share");
   const [scheduleEnabled, setScheduleEnabled] = useState(true);
+  
+  const [campaignName, setCampaignName] = useState("");
+const [startDate, setStartDate] = useState("");
+const [endDate, setEndDate] = useState("");
 
   const channelButtons = useMemo(
     () => [
@@ -149,6 +154,22 @@ export default function CreateUnifiedPost() {
     ],
     []
   );
+  const handlePublish = async () => {
+  try {
+    await api.campaigns.create({
+      name: "Q4 Growth Strategy",
+      startDate: "2024-10-24",
+      endDate: "2024-10-30",
+    });
+
+    alert("Campaign Created!");
+
+    router.push("/campaign-timeline");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to create campaign");
+  }
+};
 
   return (
     <div className="cup-page">
@@ -346,7 +367,11 @@ export default function CreateUnifiedPost() {
                 <span className="cup-when-txt">Oct 24, 2024 • 10:00 AM</span>
               </div>
 
-              <button className="cup-primary" type="button">
+              <button
+  className="cup-primary"
+  type="button"
+  onClick={handlePublish}
+>
                 PUBLISH NOW
                 <span className="cup-primary-ico" aria-hidden="true">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

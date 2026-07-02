@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { api, GeneratedPost } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { api } from "@/lib/api";
 import "../dashboard/Dashboard.css";
 import "./campaignTimeline.css";
 
@@ -31,16 +31,54 @@ function IconSearch(props) {
 const Settings = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [posts, setPosts] = useState([]);
 
-  
-useEffect(() => {
-  if (!authLoading && !user) {
-    router.push("/login");
+  const [posts, setPosts] = useState<GeneratedPost[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [objective, setObjective] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/login");
+    }
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+
+    const fetchData = async () => {
+      try {
+        const [postsData, campaignsData, objectiveData] =
+          await Promise.all([
+            api.posts.list(),
+            api.campaigns.list(),
+            api.campaigns.getObjective("2024-10"),
+          ]);
+
+          console.log("Posts:", postsData);
+console.log("Campaigns:", campaignsData);
+console.log("Objective:", objectiveData);
+
+        setPosts(postsData);
+        setCampaigns(campaignsData);
+        setObjective(objectiveData);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [authLoading, user]);
+
+  if (authLoading || loading) {
+    return <div>Loading...</div>;
   }
-}, [user, authLoading, router]);
 
-if (authLoading || !user) return null;
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="dashboard-layout">
@@ -105,8 +143,9 @@ if (authLoading || !user) return null;
               </div>
 
               <div className="profile-info">
-                <p className="user-name">Alex Mercer</p>
-                <p className="user-role">PREMIUM CURATOR</p>
+<p className="user-name">{user.name}</p>
+
+<p className="user-role">{user.role}</p>
               </div>
 
             </div>
@@ -162,7 +201,9 @@ if (authLoading || !user) return null;
             </div>
             <div className="settings-event settings-event-live">
               <div className="settings-pill settings-pill-live">LIVE</div>
-              <div className="settings-event-title">Spring Collection Launch Video</div>
+              <div className="settings-event-title">
+Spring Collection Launch Video
+</div>
               <div className="settings-event-meta">
                 <span className="settings-dot settings-dot-green" />
                                     <img
@@ -411,7 +452,7 @@ if (authLoading || !user) return null;
   className="settings-goals-btn"
   onClick={() => {
     window.scrollTo(0, 0);
-    router.push("/monthly-objective");
+    navigate("/monthly-objective");
   }}
 >
   SET NEW OBJECTIVE
@@ -474,10 +515,7 @@ if (authLoading || !user) return null;
 
           <div className="settings-feed-grid">
             <div className="settings-feed-col">
-              <div className="settings-feed-colhead">
-  DRAFTS ({posts.filter(post => post.status === "draft").length})
-</div>
-
+              <div className="settings-feed-colhead">DRAFTS (13)</div>
               <div className="settings-feed-card settings-feed-card-draft">
                 <div className="settings-feed-row">
                   <div className="settings-feed-left">

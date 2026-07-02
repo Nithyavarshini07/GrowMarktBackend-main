@@ -1,0 +1,452 @@
+.vortex-main-shell {
+  background: #f4f6fb;
+  border: 1px solid #e7ecf4;
+  border-radius: 10px;
+  padding: 18px 16px 18px;
+}
+
+.vortex-header-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.vm-body {
+  padding: 4px 22px 10px;
+}
+.vm-back {
+  border: 0;
+  background: transparent;
+  color: #7a8ca8;
+  font-weight: 700;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.vm-back:hover {
+  color: #102a43;
+}
+
+.vm-back-arrow {
+  font-size: 16px;
+  line-height: 16px;
+  margin-top: -1px;
+}
+.vortex-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.vortex-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  background: #223f78;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 18px rgba(17, 38, 88, 0.25);
+}
+
+.vortex-name-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vortex-name-row h2 {
+  margin: 0;
+  color: #1d2d44;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 800;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+}
+
+.vortex-name-row span {
+  margin-left: -110px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #1d9f76;
+}
+
+.vortex-header-left p {
+  margin: -8px 0 0;
+  font-size: 14px;
+  color: #6a7f9f;
+}
+
+.vortex-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.vortex-header-actions button {
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #d7deea;
+  padding: 0 20px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vortex-header-actions .light-btn {
+  background: #f7f9fc;
+  color: #14263f;
+}
+
+.vortex-header-actions .dark-btn {
+  background: #072344;
+  color: #ffffff;
+  border-color: #072344;
+}
+
+.vortex-metric-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.vortex-metric-card {
+  background: #ffffff;
+  border: 1px solid #e8edf5;
+  border-radius: 11px;
+  padding: 12px 14px;
+}
+
+.vortex-metric-card p {
+  margin: 0 0 8px;
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: #99a9c2;
+  font-weight: 800;
+}
+
+.vortex-metric-card h3 {
+  margin: 0;
+  color: #162944;
+  font-size: 39px;
+  line-height: 1;
+  font-weight: 800;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+}
+
+.metric-positive,
+.metric-negative {
+  margin-left: -35px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.metric-positive {
+  color: #0f7f47;
+}
+
+.metric-negative {
+  color: #ce3f48;
+}
+
+.vortex-analytics-grid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 14px;
+}
+
+.vortex-growth-card,
+.vortex-heatmap-card {
+  background: #e8edf6;
+  border: 1px solid #e0e8f4;
+  border-radius: 10px;
+  padding: 18px;
+}
+
+.vortex-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.vortex-chart-head h4 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  color: #182b45;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+}
+
+.vortex-chart-head p {
+  margin: -8px 0 0;
+  color: #8193b0;
+  font-size: 13px;
+}
+
+.vortex-legend {
+  display: flex;
+  gap: 12px;
+}
+
+.vortex-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #223655;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.dot-brand,
+.dot-industry {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-brand {
+  background: #253d86;
+}
+
+.dot-industry {
+  background: #b3bfce;
+}
+
+.vortex-chart-area {
+  margin-top: 10px;
+  height: 185px;
+  position: relative;
+}
+
+.vortex-chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-line {
+  fill: none;
+  stroke: #07763f;
+  stroke-width: 5.2;
+  stroke-linecap: round;
+}
+
+.benchmark-line {
+  fill: none;
+  stroke: #b3bfce;
+  stroke-width: 3;
+  stroke-dasharray: 5 7;
+}
+
+.peak-card {
+  position: absolute;
+  right: 4px;
+  bottom: 24px;
+  width: 118px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e1e7f1;
+  box-shadow: 0 6px 18px rgba(16, 33, 62, 0.14);
+  padding: 10px 9px;
+}
+
+.peak-card p {
+  margin: 0 0 5px;
+  font-size: 8px;
+  color: #9bacbf;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.peak-card strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 22px;
+  color: #1b2f48;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+  line-height: 1;
+}
+
+.peak-card span {
+  font-size: 23px;
+  color: #203751;
+  font-weight: 700;
+  transform: scale(0.5);
+  transform-origin: left center;
+  display: inline-block;
+  line-height: 1;
+}
+
+.vortex-heatmap-card h4 {
+  margin: 0;
+  font-size: 31px;
+  line-height: 1;
+  color: #1b2f48;
+  font-weight: 800;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+}
+
+.vortex-heatmap-card p {
+  margin: -8px 0 14px;
+  color: #8193b0;
+  font-size: 13px;
+}
+
+.vortex-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.hm {
+  height: 24px;
+  border-radius: 2px;
+}
+
+.l-1 { background: #dce6ec; }
+.l-2 { background: #c7d8d8; }
+.l-3 { background: #a9c9c1; }
+.l-4 { background: #89b8aa; }
+.l-5 { background: #67a788; }
+.l-6 { background: #498f68; }
+.l-7 { background: #2a7a4f; }
+.l-8 { background: #066a2b; }
+
+.vortex-heatmap-labels {
+  margin-top: 12px;
+  display: flex;
+  justify-content: space-between;
+  color: #6f83a4;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.vortex-feed-section {
+  margin-top: 14px;
+}
+
+.vortex-feed-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.vortex-feed-head h4 {
+  margin: 0;
+  color: #1d2f48;
+  font-size: 34px;
+  font-weight: 800;
+  transform: scale(0.5);
+  transform-origin: left center;
+  width: max-content;
+}
+
+.vortex-arrows {
+  display: flex;
+  gap: 7px;
+}
+
+.vortex-arrows span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #d8e0ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6e7f9b;
+  font-size: 13px;
+}
+
+.vortex-feed-grid {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.vortex-feed-card {
+  background: #ffffff;
+  border: 1px solid #e7edf5;
+  border-radius: 9px;
+  padding: 8px 9px 10px;
+}
+
+.feed-image-wrap {
+  position: relative;
+}
+
+.feed-image-wrap img {
+  width: 100%;
+  height: 122px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.feed-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: #0a7a44;
+  color: #ffffff;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.feed-caption {
+  margin: 8px 0 6px;
+  min-height: 40px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #6980a1;
+}
+
+.feed-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #647b98;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.feed-meta .meta-up {
+  color: #1a864f;
+}
+
+.vortex-feed-card button {
+  margin-top: 9px;
+  width: 100%;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: #e6edf7;
+  color: #2d4770;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+}
