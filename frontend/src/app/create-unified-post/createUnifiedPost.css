@@ -287,6 +287,7 @@
   grid-template-columns: minmax(clamp(150px, 16vw, 170px), clamp(150px, 16vw, 170px)) minmax(0, 1fr) minmax(0, 1fr);
   gap: clamp(12px, 1.4vw, 14px);
   align-items:stretch;
+
 }
 
 .cup-upload{
@@ -299,6 +300,13 @@
   align-items:center;
   justify-content:center;
   position: relative;
+  cursor: pointer;
+  transition: .3s ease;
+}
+
+.cup-upload:hover{
+  border-color:#4F46E5;
+  background:#EEF4FF;
 }
 
 .cup-upload-ico{ opacity: .92; }
@@ -313,14 +321,12 @@
 }
 
 .cup-thumb{
-  width: 100%;
-  height: clamp(104px, 12.8vh, 112px);
-  border-radius: 10px;
-  background: #0B1220;
-  overflow: hidden;
-  border: 1px solid rgba(226,232,240,.7);
-  background-size: cover;
-  background-repeat: no-repeat;
+  width:100%;
+  height:clamp(104px,12.8vh,112px);
+  border-radius:10px;
+  border:1px solid rgba(226,232,240,.7);
+  object-fit:cover;
+  overflow:hidden;
 }
 
 .cup-thumb-1 {
@@ -569,3 +575,7 @@
 .cup-body::-webkit-scrollbar{ width: 10px; }
 .cup-body::-webkit-scrollbar-thumb{ background: rgba(148,163,184,.35); border-radius: 999px; }
 .cup-body::-webkit-scrollbar-track{ background: rgba(226,232,240,.35); }
+
+.cup-upload input[type="file"]{
+  display:none;
+}

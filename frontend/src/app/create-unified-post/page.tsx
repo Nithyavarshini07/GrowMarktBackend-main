@@ -12,9 +12,14 @@ export default function CreateUnifiedPost() {
   const [selectedChannel, setSelectedChannel] = useState("share");
   const [scheduleEnabled, setScheduleEnabled] = useState(true);
   
-  const [campaignName, setCampaignName] = useState("");
+const [campaignName, setCampaignName] = useState("");
+const [scheduledAt, setScheduledAt] = useState("");
+const [content, setContent] = useState("");
+const [images, setImages] = useState<File[]>([]);
+const [previews, setPreviews] = useState<string[]>([]);
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
+const [loading, setLoading] = useState(false);
 
   const channelButtons = useMemo(
     () => [
@@ -154,20 +159,36 @@ const [endDate, setEndDate] = useState("");
     ],
     []
   );
-  const handlePublish = async () => {
+const handlePublish = async () => {
   try {
-    await api.campaigns.create({
-      name: "Q4 Growth Strategy",
-      startDate: "2024-10-24",
-      endDate: "2024-10-30",
-    });
+    setLoading(true);
 
-    alert("Campaign Created!");
+await api.campaigns.create({
+    name: campaignName,
+    objective: content,
+    startDate,
+    endDate,
+    channels: [selectedChannel],
+    feedSummary: content,
 
+    images: previews
+});
+    // 👇 Paste this here
+    if (scheduleEnabled && scheduledAt) {
+      await api.schedule.create({
+        platform: selectedChannel,
+        content,
+        scheduledAt,
+      });
+    }
+
+    alert("Campaign Created Successfully!");
     router.push("/campaign-timeline");
-  } catch (err) {
-    console.error(err);
+  } catch (error) {
+    console.error(error);
     alert("Failed to create campaign");
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -216,7 +237,9 @@ const [endDate, setEndDate] = useState("");
         <div className="cup-modal-head">
           <div className="cup-modal-titlewrap">
             <div className="cup-title">Create Unified Post</div>
-            <div className="cup-subtitle">CAMPAIGN: Q4 GROWTH STRATEGY</div>
+            <div className="cup-subtitle">
+CAMPAIGN: {campaignName || "New Campaign"}
+</div>
           </div>
 <button
   className="cup-close"
@@ -254,16 +277,43 @@ const [endDate, setEndDate] = useState("");
                 ))}
               </div>
             </div>
+            <div className="cup-section">
+  <div className="cup-section-title">CAMPAIGN DETAILS</div>
+
+  <input
+    type="text"
+    placeholder="Campaign Name"
+    value={campaignName}
+    onChange={(e) => setCampaignName(e.target.value)}
+  />
+
+  <input
+    type="date"
+    value={startDate}
+    onChange={(e) => setStartDate(e.target.value)}
+  />
+
+  <input
+    type="date"
+    value={endDate}
+    onChange={(e) => setEndDate(e.target.value)}
+  />
+
+</div>
+            
 
             <div className="cup-section cup-section-editor">
               <div className="cup-section-row">
                 <div className="cup-section-title">EDITORIAL CONTENT</div>
-                <div className="cup-counter">428 / 2,200</div>
+                <div className="cup-counter">
+  {content.length} / 2,200
+</div>
               </div>
               <div className="cup-editor">
-                <textarea
-                  className="cup-textarea"
-                  defaultValue=""
+<textarea
+  className="cup-textarea"
+  value={content}
+  onChange={(e) => setContent(e.target.value)}
                   placeholder="Write your post insights here... Use #hashtags to increase organic reach across your connected platforms."
                 />
                 <div className="cup-editor-actions" aria-hidden="true">
@@ -295,51 +345,109 @@ const [endDate, setEndDate] = useState("");
               </div>
             </div>
 
-            <div className="cup-section">
-              <div className="cup-section-title">VISUAL ASSETS</div>
-              <div className="cup-assets">
-                <div className="cup-upload">
-                  <div className="cup-upload-ico" aria-hidden="true">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M7 20.2h10a3 3 0 0 0 3-3V9.8a3 3 0 0 0-3-3h-1.7l-1.3-1.8H10l-1.3 1.8H7a3 3 0 0 0-3 3v7.4a3 3 0 0 0 3 3Z"
-                        stroke="#CBD5E1"
-                        strokeWidth="1.7"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 16.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
-                        stroke="#CBD5E1"
-                        strokeWidth="1.7"
-                      />
-                    </svg>
-                  </div>
-                  <div className="cup-upload-label">UPLOAD</div>
-                </div>
-                <div className="cup-thumb cup-thumb-1" aria-label="Asset 1" />
-                <div className="cup-thumb cup-thumb-2" aria-label="Asset 2" />
-              </div>
-            </div>
+<div className="cup-section">
+  <div className="cup-section-title">VISUAL ASSETS</div>
+
+  <div className="cup-assets">
+
+    <label className="cup-upload">
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        style={{ display: "none" }}
+onChange={(e) => {
+  if (!e.target.files) return;
+
+const file = e.target.files?.[0];
+if (!file) return;
+
+setImages((prev) => [...prev, file]);
+setPreviews((prev) => [...prev, URL.createObjectURL(file)]);
+
+// Clear the input so the same file can be selected again later
+e.target.value = "";
+}}
+      />
+
+      <div className="cup-upload-ico" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M7 20.2h10a3 3 0 0 0 3-3V9.8a3 3 0 0 0-3-3h-1.7l-1.3-1.8H10l-1.3 1.8H7a3 3 0 0 0-3 3v7.4a3 3 0 0 0 3 3Z"
+            stroke="#CBD5E1"
+            strokeWidth="1.7"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 16.4a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
+            stroke="#CBD5E1"
+            strokeWidth="1.7"
+          />
+        </svg>
+      </div>
+
+<div className="cup-upload-label">
+ {images.length > 0 ? "ADD IMAGE" : "UPLOAD"}
+</div>
+    </label>
+
+{previews.map((img, index) => (
+  <img
+    key={index}
+    src={img}
+    alt={`Preview ${index + 1}`}
+    className="cup-thumb"
+  />
+))}
+
+  </div>
+</div>
 
             <div className="cup-footer">
-              <button className="cup-linkbtn" type="button">
-                SAVE DRAFT
-              </button>
+<button
+  className="cup-linkbtn"
+  type="button"
+  onClick={async () => {
+    await api.campaigns.create({
+      name: campaignName,
+      objective: content,
+      startDate,
+      endDate,
+      status: "DRAFT",
+      channels: [selectedChannel],
+      feedSummary: content,
+    });
+
+    alert("Draft Saved");
+  }}
+>
+  SAVE DRAFT
+</button>
 
               <div className="cup-toggle-wrap">
-                <div className="cup-toggle-label">SCHEDULE POST</div>
-                <button
-                  className={`cup-toggle ${scheduleEnabled ? "is-on" : "is-off"}`}
-                  type="button"
-                  onClick={() => setScheduleEnabled((v) => !v)}
-                  aria-label="Schedule Post"
-                  aria-pressed={scheduleEnabled}
-                >
-                  <span className="cup-toggle-knob" />
-                </button>
-              </div>
+  <div className="cup-toggle-label">SCHEDULE POST</div>
 
-              <div className="cup-spacer" />
+  <button
+    className={`cup-toggle ${scheduleEnabled ? "is-on" : "is-off"}`}
+    type="button"
+    onClick={() => setScheduleEnabled((v) => !v)}
+    aria-label="Schedule Post"
+    aria-pressed={scheduleEnabled}
+  >
+    <span className="cup-toggle-knob" />
+  </button>
+
+  {scheduleEnabled && (
+    <input
+      type="datetime-local"
+      value={scheduledAt}
+      onChange={(e) => setScheduledAt(e.target.value)}
+      className="cup-schedule-input"
+    />
+  )}
+</div>
+
+<div className="cup-spacer" />
 
               <div className="cup-when">
                 <span className="cup-when-ico" aria-hidden="true">
@@ -364,13 +472,16 @@ const [endDate, setEndDate] = useState("");
                     />
                   </svg>
                 </span>
-                <span className="cup-when-txt">Oct 24, 2024 • 10:00 AM</span>
+                <span className="cup-when-txt">
+{scheduledAt || "Select Schedule"}
+</span>
               </div>
 
-              <button
+<button
   className="cup-primary"
   type="button"
   onClick={handlePublish}
+  disabled={loading}
 >
                 PUBLISH NOW
                 <span className="cup-primary-ico" aria-hidden="true">
@@ -405,21 +516,30 @@ const [endDate, setEndDate] = useState("");
   className="cup-prev-avatar"
 />
                 <div className="cup-prev-meta">
-                  <div className="cup-prev-name">GrowMarkt Agency</div>
+                  <div className="cup-prev-name">
+{campaignName || "Campaign"}
+</div>
                   <div className="cup-prev-sub">12,402 followers • promoted</div>
                 </div>
               </div>
 
-              <div className="cup-prev-text">
-                Maximizing our Q4 velocity with a focus on data-driven content architectures. Our latest metrics
-                indicate a 42% lift in organic engagement...
-              </div>
+<div className="cup-prev-text">
+  {content || "Write your post..."}
+</div>
 
-              <img
-  src="/assets/coffee.png"
-  alt="Media Preview"
-  className="cup-prev-media"
-/>
+{previews.length > 0 ? (
+  <img
+    src={previews[0]}
+    alt="Media Preview"
+    className="cup-prev-media"
+  />
+) : (
+  <img
+    src="/assets/coffee.png"
+    alt="Media Preview"
+    className="cup-prev-media"
+  />
+)}
 
               <div className="cup-prev-actions" aria-hidden="true">
                 <div className="cup-prev-act">
@@ -481,7 +601,7 @@ const [endDate, setEndDate] = useState("");
                 </div>
               </div>
               <img
-  src="/assets/coffee.png"
+  src={previews[0] || "/assets/coffee.png"}
   alt="Mini Media"
   className="cup-mini-media"
 />

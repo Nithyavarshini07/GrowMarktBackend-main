@@ -32,10 +32,17 @@ const Settings = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const [posts, setPosts] = useState<GeneratedPost[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [objective, setObjective] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+const [posts, setPosts] = useState<GeneratedPost[]>([]);
+const [campaigns, setCampaigns] = useState<any[]>([]);
+
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState("");
+
+const [search, setSearch] = useState("");
+
+const filteredPosts = posts.filter(post =>
+  post.title.toLowerCase().includes(search.toLowerCase())
+);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -48,23 +55,25 @@ const Settings = () => {
 
     const fetchData = async () => {
       try {
-        const [postsData, campaignsData, objectiveData] =
-          await Promise.all([
-            api.posts.list(),
-            api.campaigns.list(),
-            api.campaigns.getObjective("2024-10"),
-          ]);
+const [postsData, campaignsData] =
+await Promise.all([
+api.posts.list(),
+api.campaigns.list(),
+]);
 
           console.log("Posts:", postsData);
-console.log("Campaigns:", campaignsData);
-console.log("Objective:", objectiveData);
+console.log("Campaigns:", JSON.stringify(campaignsData, null, 2));
+console.log("Objective Data");
+
+
 
         setPosts(postsData);
         setCampaigns(campaignsData);
-        setObjective(objectiveData);
-      } catch (err) {
-        console.error(err);
-      } finally {
+
+      } catch (err: any) {
+  console.error(err);
+  setError(err.message || "Something went wrong");
+} finally {
         setLoading(false);
       }
     };
@@ -73,14 +82,40 @@ console.log("Objective:", objectiveData);
   }, [authLoading, user]);
 
   if (authLoading || loading) {
-    return <div>Loading...</div>;
-  }
+  return <div>Loading...</div>;
+}
 
-  if (!user) {
-    return null;
-  }
+if (error) {
+  return <div>{error}</div>;
+}
 
-  return (
+if (!user) {
+  return null;
+}
+
+const getCampaignForDay = (day: string) => {
+  return campaigns.find((campaign) => {
+    const campaignDay = new Date(campaign.startDate)
+      .toLocaleDateString("en-US", { weekday: "short" })
+      .toUpperCase();
+
+    return campaignDay === day;
+  });
+};
+
+const monCampaign = getCampaignForDay("MON");
+const tueCampaign = getCampaignForDay("TUE");
+const wedCampaign = getCampaignForDay("WED");
+const thuCampaign = getCampaignForDay("THU");
+const friCampaign = getCampaignForDay("FRI");
+const satCampaign = getCampaignForDay("SAT");
+const sunCampaign = getCampaignForDay("SUN");
+
+const publishedPosts = posts.filter(
+  (post) => post.status?.toUpperCase() === "PUBLISHED"
+);
+
+return (
     <div className="dashboard-layout">
       <aside className="sidebar">
         <div className="brand-header">
@@ -128,9 +163,11 @@ console.log("Objective:", objectiveData);
   <span className="settings-search-icon">
 <IconSearch />
   </span>
-  <input
-    placeholder="Search insights..."
-  />
+<input
+    value={search}
+    onChange={(e)=>setSearch(e.target.value)}
+    placeholder="Search..."
+/>
 </div>
 
           <div className="user-profile">
@@ -196,13 +233,19 @@ console.log("Objective:", objectiveData);
         <section className="settings-timeline">
           <div className="settings-day">
             <div className="settings-day-top">
-              <div className="settings-day-name">MON</div>
-              <div className="settings-day-num">12</div>
+<div className="settings-day-name">
+  MON
+</div>
+ <div className="settings-day-num">
+  {monCampaign ? new Date(monCampaign.startDate).getDate() : 12}
+</div>
             </div>
             <div className="settings-event settings-event-live">
-              <div className="settings-pill settings-pill-live">LIVE</div>
-              <div className="settings-event-title">
-Spring Collection Launch Video
+<div className="settings-pill settings-pill-live">
+  {monCampaign?.status ?? "LIVE"}
+</div>
+<div className="settings-event-title">
+  {monCampaign?.name ?? "Spring Collection Launch Video"}
 </div>
               <div className="settings-event-meta">
                 <span className="settings-dot settings-dot-green" />
@@ -211,7 +254,9 @@ Spring Collection Launch Video
   alt="Instagram"
   className="settings-dot settings-dot-blue"
 />
-                <span>INSTAGRAM</span>
+<span>
+  {monCampaign?.channels?.[0]?.toUpperCase() ?? "INSTAGRAM"}
+</span>
               </div>
             </div>
             <div className="settings-event settings-event-muted">
@@ -224,110 +269,196 @@ Spring Collection Launch Video
             </div>
           </div>
 
-          <div className="settings-day">
-            <div className="settings-day-top">
-              <div className="settings-day-name">TUE</div>
-              <div className="settings-day-num">13</div>
-            </div>
-            <div className="settings-event">
-              <div className="settings-pill settings-pill-draft">DRAFT</div>
-              <div className="settings-event-title">Weekly Metric Carousel Review</div>
-              <div className="settings-event-meta">
-                <span className="settings-dot settings-dot-blue" />
-                <img
-  src="/assets/linkedin3.png"
-  alt="LinkedIn"
-  className="settings-dot settings-dot-gray"
-/>
-                <span>LINKEDIN</span>
-              </div>
-            </div>
-          </div>
+<div className="settings-day">
+  <div className="settings-day-top">
+    <div className="settings-day-name">TUE</div>
+    <div className="settings-day-num">
+      {tueCampaign ? new Date(tueCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
+
+  {tueCampaign ? (
+    <div className="settings-event">
+      <div className="settings-pill settings-pill-draft">
+        {tueCampaign.status}
+      </div>
+
+      <div className="settings-event-title">
+        {tueCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span className="settings-dot settings-dot-blue" />
+        <span>
+          {tueCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-empty">
+      <div className="settings-empty-title">No events</div>
+      <div className="settings-empty-sub">scheduled</div>
+    </div>
+  )}
+</div>
 
           <div className="settings-day settings-day-active">
-            <div className="settings-day-top">
-              <div className="settings-day-name">WED</div>
-              <div className="settings-day-num">14</div>
-            </div>
-            <div className="settings-event settings-event-dark">
-              <div className="settings-pill settings-pill-plan">PLANNED</div>
-              <div className="settings-event-title">Growth Catalyst Keynote Stream</div>
-              <div className="settings-collab">
-<div className="settings-faces">
-  <img
-    src="/assets/user1.jpg"
-    alt="User 1"
-    className="settings-face settings-face-1"
-  />
+  <div className="settings-day-top">
+    <div className="settings-day-name">WED</div>
+    <div className="settings-day-num">
+      {wedCampaign ? new Date(wedCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
 
-  <img
-    src="/assets/girl.jpg"
-    alt="Girl"
-    className="settings-face settings-face-2"
-  />
+  {wedCampaign ? (
+    <div className="settings-event settings-event-dark">
+      <div className="settings-pill settings-pill-plan">
+        {wedCampaign.status}
+      </div>
 
-  <img
-    src="/assets/alex.jpg"
-    alt="Alex"
-    className="settings-face settings-face-3"
-  />
+      <div className="settings-event-title">
+        {wedCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span>
+          {wedCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-empty">
+      <div className="settings-empty-title">No events</div>
+      <div className="settings-empty-sub">scheduled</div>
+    </div>
+  )}
 </div>
-                <div className="settings-collab-txt">Collaborators</div>
-              </div>
-            </div>
-          </div>
+          <div className="settings-day">
+  <div className="settings-day-top">
+    <div className="settings-day-name">THU</div>
+    <div className="settings-day-num">
+      {thuCampaign ? new Date(thuCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
+
+  {thuCampaign ? (
+    <div className="settings-event">
+      <div className="settings-pill">
+        {thuCampaign.status}
+      </div>
+
+      <div className="settings-event-title">
+        {thuCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span>
+          {thuCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-empty">
+      <div className="settings-empty-title">No events</div>
+      <div className="settings-empty-sub">scheduled</div>
+    </div>
+  )}
+</div>
 
           <div className="settings-day">
-            <div className="settings-day-top">
-              <div className="settings-day-name">THU</div>
-              <div className="settings-day-num">15</div>
-            </div>
-            <div className="settings-empty">
-              <div className="settings-empty-title">No events</div>
-              <div className="settings-empty-sub">scheduled</div>
-            </div>
-          </div>
+  <div className="settings-day-top">
+    <div className="settings-day-name">FRI</div>
+    <div className="settings-day-num">
+      {friCampaign ? new Date(friCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
+
+  {friCampaign ? (
+    <div className="settings-event">
+      <div className="settings-pill settings-pill-ready">
+        {friCampaign.status}
+      </div>
+
+      <div className="settings-event-title">
+        {friCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span>
+          {friCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-empty">
+      <div className="settings-empty-title">No events</div>
+      <div className="settings-empty-sub">scheduled</div>
+    </div>
+  )}
+</div>
 
           <div className="settings-day">
-            <div className="settings-day-top">
-              <div className="settings-day-name">FRI</div>
-              <div className="settings-day-num">16</div>
-            </div>
-            <div className="settings-event">
-              <div className="settings-pill settings-pill-ready">READY</div>
-              <div className="settings-event-title">Weekend Roundup Blast</div>
-              <div className="settings-event-meta">
-                <span className="settings-dot settings-dot-amber" />
-                 <img
-      src="/assets/contact.png"
-      alt="Contact"
-      className="settings-dot settings-dot-amber"
-    />
-                <span>EMAIL</span>
-              </div>
-            </div>
-          </div>
+  <div className="settings-day-top">
+    <div className="settings-day-name">SAT</div>
+    <div className="settings-day-num">
+      {satCampaign ? new Date(satCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
+
+  {satCampaign ? (
+    <div className="settings-event">
+      <div className="settings-pill">
+        {satCampaign.status}
+      </div>
+
+      <div className="settings-event-title">
+        {satCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span>
+          {satCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-add">
+      <div className="settings-add-btn">+</div>
+    </div>
+  )}
+</div>
 
           <div className="settings-day">
-            <div className="settings-day-top">
-              <div className="settings-day-name">SAT</div>
-              <div className="settings-day-num">17</div>
-            </div>
-            <div className="settings-add">
-              <div className="settings-add-btn">+</div>
-            </div>
-          </div>
+  <div className="settings-day-top">
+    <div className="settings-day-name">SUN</div>
+    <div className="settings-day-num">
+      {sunCampaign ? new Date(sunCampaign.startDate).getDate() : "-"}
+    </div>
+  </div>
 
-          <div className="settings-day">
-            <div className="settings-day-top">
-              <div className="settings-day-name">SUN</div>
-              <div className="settings-day-num">18</div>
-            </div>
-            <div className="settings-empty settings-empty-right">
-              <div className="settings-empty-title">No events</div>
-              <div className="settings-empty-sub">scheduled</div>
-            </div>
-          </div>
+  {sunCampaign ? (
+    <div className="settings-event">
+      <div className="settings-pill">
+        {sunCampaign.status}
+      </div>
+
+      <div className="settings-event-title">
+        {sunCampaign.name}
+      </div>
+
+      <div className="settings-event-meta">
+        <span>
+          {sunCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+        </span>
+      </div>
+    </div>
+  ) : (
+    <div className="settings-empty settings-empty-right">
+      <div className="settings-empty-title">No events</div>
+      <div className="settings-empty-sub">scheduled</div>
+    </div>
+  )}
+</div>
         </section>
 
         <section className="settings-kpis">
@@ -353,7 +484,7 @@ Spring Collection Launch Video
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">142</span>
+              <span className="settings-kpi-big">{campaigns.length}</span>
               <span className="settings-kpi-delta">+12% vs LW</span>
             </div>
             <div className="settings-mini-bars">
@@ -387,7 +518,7 @@ Spring Collection Launch Video
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">8.4k</span>
+              <span className="settings-kpi-big">{campaigns.length}</span>
               <span className="settings-live">LIVE</span>
             </div>
             <div className="settings-avatars">
@@ -427,7 +558,7 @@ Spring Collection Launch Video
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">24</span>
+              <span className="settings-kpi-big">{campaigns.length}</span>
               <span className="settings-kpi-sub">Global Ops</span>
             </div>
             <div className="settings-progress">
@@ -442,67 +573,98 @@ Spring Collection Launch Video
           </div>
         </section>
 
-        <section className="settings-goals">
-          <div className="settings-goals-top">
-            <div>
-              <div className="settings-section-title">Monthly Campaign Goals</div>
-              <div className="settings-section-sub">Strategic objectives for October 2024</div>
+<section className="settings-goals">
+  {campaigns.length === 0 ? (
+    <div>No Monthly Objective Found</div>
+  ) : (
+    <>
+      <div className="settings-goals-top">
+        <div>
+          <div className="settings-section-title">
+            Monthly Campaign Goals
+          </div>
+          <div className="settings-section-sub">
+            Strategic objectives for October 2024
+          </div>
+        </div>
+
+        <button
+          className="settings-goals-btn"
+          onClick={() => {
+            window.scrollTo(0, 0);
+            router.push("/monthly-objective");
+          }}
+        >
+          SET NEW OBJECTIVE
+        </button>
+      </div>
+
+      <div className="settings-goal-grid">
+        <div className="settings-goal">
+          <div className="settings-goal-head">
+            <div className="settings-goal-label">TARGET REACH</div>
+            <div className="settings-goal-state settings-state-ok">
+              ON TRACK
             </div>
-            <button 
-  className="settings-goals-btn"
-  onClick={() => {
-    window.scrollTo(0, 0);
-    navigate("/monthly-objective");
-  }}
->
-  SET NEW OBJECTIVE
-</button>
           </div>
 
-          <div className="settings-goal-grid">
-            <div className="settings-goal">
-              <div className="settings-goal-head">
-                <div className="settings-goal-label">TARGET REACH</div>
-                <div className="settings-goal-state settings-state-ok">ON TRACK</div>
-              </div>
-              <div className="settings-goal-value">
-                <span className="settings-goal-big">2.4M</span>
-                <span className="settings-goal-small">/ 3.0M goal</span>
-              </div>
-              <div className="settings-goal-bar">
-                <div className="settings-goal-fill settings-goal-fill-blue" />
-              </div>
-            </div>
+          <div className="settings-goal-value">
+            <span className="settings-goal-big">
+              {campaigns[0]?.goals?.targetReach ?? 0}
+            </span>
+            <span className="settings-goal-small">/ 3.0M goal</span>
+          </div>
 
-            <div className="settings-goal">
-              <div className="settings-goal-head">
-                <div className="settings-goal-label">POST COUNT</div>
-                <div className="settings-goal-state settings-state-risk">AT RISK</div>
-              </div>
-              <div className="settings-goal-value">
-                <span className="settings-goal-big">312</span>
-                <span className="settings-goal-small">/ 500 goal</span>
-              </div>
-              <div className="settings-goal-bar">
-                <div className="settings-goal-fill settings-goal-fill-slate" />
-              </div>
-            </div>
+          <div className="settings-goal-bar">
+            <div className="settings-goal-fill settings-goal-fill-blue" />
+          </div>
+        </div>
 
-            <div className="settings-goal">
-              <div className="settings-goal-head">
-                <div className="settings-goal-label">ENGAGEMENT RATE</div>
-                <div className="settings-goal-state settings-state-good">EXCEEDING</div>
-              </div>
-              <div className="settings-goal-value">
-                <span className="settings-goal-big">4.8%</span>
-                <span className="settings-goal-small">/ 4.0% goal</span>
-              </div>
-              <div className="settings-goal-bar">
-                <div className="settings-goal-fill settings-goal-fill-green" />
-              </div>
+        <div className="settings-goal">
+          <div className="settings-goal-head">
+            <div className="settings-goal-label">POST COUNT</div>
+            <div className="settings-goal-state settings-state-risk">
+              AT RISK
             </div>
           </div>
-        </section>
+
+          <div className="settings-goal-value">
+            <span className="settings-goal-big">
+              {campaigns[0]?.goals?.targetCount ?? 0}
+            </span>
+            <span className="settings-goal-small">/ 500 goal</span>
+          </div>
+
+          <div className="settings-goal-bar">
+            <div className="settings-goal-fill settings-goal-fill-slate" />
+          </div>
+        </div>
+
+        <div className="settings-goal">
+          <div className="settings-goal-head">
+            <div className="settings-goal-label">
+              ENGAGEMENT RATE
+            </div>
+            <div className="settings-goal-state settings-state-good">
+              EXCEEDING
+            </div>
+          </div>
+
+          <div className="settings-goal-value">
+            <span className="settings-goal-big">
+              {`${campaigns[0]?.goals?.targetEngagementRate ?? 0}%`}
+            </span>
+            <span className="settings-goal-small">/ 4.0% goal</span>
+          </div>
+
+          <div className="settings-goal-bar">
+            <div className="settings-goal-fill settings-goal-fill-green" />
+          </div>
+        </div>
+      </div>
+    </>
+  )}
+</section>
 
         <section className="settings-feed">
           <div className="settings-feed-top">
@@ -514,126 +676,190 @@ Spring Collection Launch Video
           </div>
 
           <div className="settings-feed-grid">
-            <div className="settings-feed-col">
-              <div className="settings-feed-colhead">DRAFTS (13)</div>
-              <div className="settings-feed-card settings-feed-card-draft">
-                <div className="settings-feed-row">
-                  <div className="settings-feed-left">
-                    <div className="settings-feed-ico">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M7 4.8h10a2 2 0 0 1 2 2v12.4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6.8a2 2 0 0 1 2-2Z"
-                          stroke="#0F172A"
-                          strokeWidth="1.8"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M8.2 9.2h7.6M8.2 12.3h5.8"
-                          stroke="#0F172A"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </div>
-                    <div className="settings-feed-meta">
-                      <div className="settings-feed-title">
-                        Reimagining Urban Minimalism: A Visual Essay
-                      </div>
-                      <div className="settings-feed-sub">
-                        Initial thoughts on how modular architectures influence digital UI...
-                      </div>
-                    </div>
-                  </div>
-                  <div className="settings-feed-tag settings-tag-draft">DRAFT</div>
-                </div>
-                <div className="settings-feed-foot">Edited 2h ago</div>
-              </div>
+<div className="settings-feed-col">
+  <div className="settings-feed-colhead">
+    DRAFTS ({filteredPosts.length})
+  </div>
+
+  {filteredPosts.map((post) => (
+    <div
+      key={post._id}
+      className="settings-feed-card settings-feed-card-draft"
+    >
+      <div className="settings-feed-row">
+        <div className="settings-feed-left">
+          <div className="settings-feed-ico">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 4.8h10a2 2 0 0 1 2 2v12.4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6.8a2 2 0 0 1 2-2Z"
+                stroke="#0F172A"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8.2 9.2h7.6M8.2 12.3h5.8"
+                stroke="#0F172A"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div className="settings-feed-meta">
+            <div className="settings-feed-title">
+              {post.title}
             </div>
 
-            <div className="settings-feed-col">
-              <div className="settings-feed-colhead settings-feed-colhead-mid">SCHEDULED (6)</div>
-              <div className="settings-feed-card settings-feed-card-scheduled">
-                <div className="settings-feed-row">
-                  <div className="settings-feed-left">
-                    <div className="settings-feed-ico settings-feed-ico-green">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M7 5.3h10a2 2 0 0 1 2 2v10.4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7.3a2 2 0 0 1 2-2Z"
-                          stroke="#16A34A"
-                          strokeWidth="1.8"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d="M8.2 12.2h7.6"
-                          stroke="#16A34A"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M12 8.6v7.2"
-                          stroke="#16A34A"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </div>
-                    <div className="settings-feed-meta">
-                      <div className="settings-feed-title">Behind the Scenes: The Curator’s Process</div>
-                    </div>
-                  </div>
-                  <div className="settings-feed-tag settings-tag-scheduled">SCHEDULED</div>
-                </div>
-                <img
-  src="/assets/schedule.png"
-  alt="Schedule"
-  className="settings-feed-thumb"
-/>
-                <div className="settings-feed-foot settings-feed-foot-green">Tomorrow, 10:00 AM</div>
-              </div>
+            <div className="settings-feed-sub">
+              {post.description}
             </div>
+          </div>
+        </div>
+
+        <div className="settings-feed-tag settings-tag-draft">
+          {post.status}
+        </div>
+      </div>
+
+      <div className="settings-feed-foot">
+        {post.createdAt
+          ? `Edited ${new Date(post.createdAt).toLocaleDateString()}`
+          : "Recently edited"}
+      </div>
+    </div>
+  ))}
+</div>
+         
 
             <div className="settings-feed-col">
-              <div className="settings-feed-colhead">PUBLISHED (142)</div>
-              <div className="settings-feed-card settings-feed-card-pub">
-                <div className="settings-feed-row">
-                  <div className="settings-feed-left">
-                    <div className="settings-feed-ico settings-feed-ico-blue">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path
-                          d="M7.4 16.8h9.2a2 2 0 0 0 2-2V8.1a2 2 0 0 0-2-2H7.4a2 2 0 0 0-2 2v6.7a2 2 0 0 0 2 2Z"
-                          stroke="#2563EB"
-                          strokeWidth="1.8"
-                        />
-                        <path
-                          d="M8.4 11.2h7.2"
-                          stroke="#2563EB"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </div>
-                    <div className="settings-feed-meta">
-                      <div className="settings-feed-title">10 Frameworks for Scaling Editorial Teams in 2024</div>
-                    </div>
-                  </div>
-                  <div className="settings-feed-tag settings-tag-pub">PUBLISHED</div>
-                </div>
-                <div className="settings-feed-metrics">
-                  <div className="settings-metric">
-                    <div className="settings-metric-l">REACH</div>
-                    <div className="settings-metric-v">12.4k</div>
-                  </div>
-                  <div className="settings-metric">
-                    <div className="settings-metric-l">ENG</div>
-                    <div className="settings-metric-v">4.2%</div>
-                  </div>
-                  <div className="settings-metric">
-                    <div className="settings-metric-l">SHARES</div>
-                    <div className="settings-metric-v">184</div>
-                  </div>
-                </div>
-              </div>
+  <div className="settings-feed-colhead settings-feed-colhead-mid">
+    SCHEDULED ({campaigns.length})
+  </div>
+
+  {campaigns.map((campaign) => (
+    <div
+      key={campaign._id}
+      className="settings-feed-card settings-feed-card-scheduled"
+    >
+      <div className="settings-feed-row">
+        <div className="settings-feed-left">
+          <div className="settings-feed-ico settings-feed-ico-green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7 5.3h10a2 2 0 0 1 2 2v10.4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7.3a2 2 0 0 1 2-2Z"
+                stroke="#16A34A"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M8.2 12.2h7.6"
+                stroke="#16A34A"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <path
+                d="M12 8.6v7.2"
+                stroke="#16A34A"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div className="settings-feed-meta">
+            <div className="settings-feed-title">
+              {campaign.name}
             </div>
+          </div>
+        </div>
+
+        <div className="settings-feed-tag settings-tag-scheduled">
+          {campaign.status}
+        </div>
+      </div>
+
+      <img
+        src="/assets/schedule.png"
+        alt="Schedule"
+        className="settings-feed-thumb"
+      />
+
+      <div className="settings-feed-foot settings-feed-foot-green">
+        {campaign.startDate
+          ? new Date(campaign.startDate).toLocaleString()
+          : "Not Scheduled"}
+      </div>
+    </div>
+  ))}
+</div>
+
+            <div className="settings-feed-col">
+  <div className="settings-feed-colhead">
+    PUBLISHED ({publishedPosts.length})
+  </div>
+
+  {publishedPosts.map((post) => (
+    <div
+      key={post._id}
+      className="settings-feed-card settings-feed-card-pub"
+    >
+      <div className="settings-feed-row">
+        <div className="settings-feed-left">
+          <div className="settings-feed-ico settings-feed-ico-blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M7.4 16.8h9.2a2 2 0 0 0 2-2V8.1a2 2 0 0 0-2-2H7.4a2 2 0 0 0-2 2v6.7a2 2 0 0 0 2 2Z"
+                stroke="#2563EB"
+                strokeWidth="1.8"
+              />
+              <path
+                d="M8.4 11.2h7.2"
+                stroke="#2563EB"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div className="settings-feed-meta">
+            <div className="settings-feed-title">
+              {post.title}
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-feed-tag settings-tag-pub">
+          {post.status}
+        </div>
+      </div>
+
+      <div className="settings-feed-metrics">
+        <div className="settings-metric">
+          <div className="settings-metric-l">REACH</div>
+          <div className="settings-metric-v">
+            {post.reach ?? "0"}
+          </div>
+        </div>
+
+        <div className="settings-metric">
+          <div className="settings-metric-l">ENG</div>
+          <div className="settings-metric-v">
+            {post.engagementRate
+              ? `${post.engagementRate}%`
+              : "0%"}
+          </div>
+        </div>
+
+        <div className="settings-metric">
+          <div className="settings-metric-l">SHARES</div>
+          <div className="settings-metric-v">
+            {post.shares ?? "0"}
+          </div>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
           </div>
         </section>
         </div>
