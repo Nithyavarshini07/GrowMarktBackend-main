@@ -23,8 +23,9 @@ export interface ICampaign extends Document {
   name: string;
   objective: CampaignObjective;
   status: CampaignStatus;
-  channels: Array<"linkedin" | "instagram" | "facebook" | "twitter">;
-  collaborators: ICampaignCollaborator[];
+channels: Array<"linkedin" | "instagram" | "facebook" | "twitter">;
+images: string[];
+collaborators: ICampaignCollaborator[];
 
   targetReach: number;
   currentReach: number;
@@ -82,6 +83,10 @@ const CampaignSchema = new Schema<ICampaign>(
       default: ["linkedin"],
       enum: ["linkedin", "instagram", "facebook", "twitter"],
     },
+    images: {
+  type: [String],
+  default: [],
+},
     collaborators: {
       type: [CollaboratorSchema],
       default: [],

@@ -115,6 +115,31 @@ const publishedPosts = posts.filter(
   (post) => post.status?.toUpperCase() === "PUBLISHED"
 );
 
+const scheduledCampaigns = campaigns.filter(
+  (c) => c.status?.toUpperCase() === "SCHEDULED"
+);
+
+const activeCampaigns = campaigns.filter(
+  (c) =>
+    c.status?.toUpperCase() === "LIVE" ||
+    c.status?.toUpperCase() === "ACTIVE"
+);
+
+const totalReach = publishedPosts.reduce(
+  (sum, post) => sum + (post.reach || 0),
+  0
+);
+
+const avgEngagement =
+  publishedPosts.length > 0
+    ? (
+        publishedPosts.reduce(
+          (sum, post) => sum + (post.engagementRate || 0),
+          0
+        ) / publishedPosts.length
+      ).toFixed(2)
+    : "0";
+
 return (
     <div className="dashboard-layout">
       <aside className="sidebar">
@@ -187,7 +212,10 @@ return (
 
             </div>
 
-            <img src="/assets/alex.jpg" alt="avatar" className="avatar" />
+            <img
+   src={user.profileImage || "/assets/alex.jpg"}
+   alt={user.name}
+/>
 
           </div>
 
@@ -484,7 +512,7 @@ return (
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">{campaigns.length}</span>
+              <span className="settings-kpi-big">{scheduledCampaigns.length}</span>
               <span className="settings-kpi-delta">+12% vs LW</span>
             </div>
             <div className="settings-mini-bars">
@@ -518,7 +546,7 @@ return (
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">{campaigns.length}</span>
+              <span className="settings-kpi-big">{activeCampaigns.length}</span>
               <span className="settings-live">LIVE</span>
             </div>
             <div className="settings-avatars">
@@ -558,7 +586,7 @@ return (
               </div>
             </div>
             <div className="settings-kpi-value">
-              <span className="settings-kpi-big">{campaigns.length}</span>
+              <span className="settings-kpi-big">{activeCampaigns.length}</span>
               <span className="settings-kpi-sub">Global Ops</span>
             </div>
             <div className="settings-progress">
@@ -733,7 +761,7 @@ return (
 
             <div className="settings-feed-col">
   <div className="settings-feed-colhead settings-feed-colhead-mid">
-    SCHEDULED ({campaigns.length})
+    SCHEDULED ({scheduledCampaigns.length})
   </div>
 
   {campaigns.map((campaign) => (
@@ -778,9 +806,10 @@ return (
         </div>
       </div>
 
-      <img
-        src="/assets/schedule.png"
-        alt="Schedule"
+<img
+    src={campaign.image || "/assets/schedule.png"}
+    alt={campaign.name}
+
         className="settings-feed-thumb"
       />
 

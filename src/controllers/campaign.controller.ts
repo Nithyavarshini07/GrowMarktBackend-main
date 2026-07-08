@@ -40,6 +40,7 @@ function toCampaignResponse(campaign: any): Record<string, unknown> {
     objective: campaign.objective,
     status: campaign.status,
     channels: campaign.channels || [],
+    images: campaign.images || [],
     collaborators: campaign.collaborators || [],
     goals: {
       targetReach: campaign.targetReach || 0,
@@ -334,6 +335,9 @@ export const createCampaign = async (
       channels: Array.isArray(payload.channels)
         ? payload.channels
         : ["linkedin"],
+        images: Array.isArray(payload.images)
+  ? payload.images
+  : [],
       collaborators: Array.isArray(payload.collaborators)
         ? payload.collaborators
         : [],
@@ -385,6 +389,7 @@ export const updateCampaign = async (
       "objective",
       "status",
       "channels",
+        "images",
       "collaborators",
       "targetReach",
       "currentReach",
