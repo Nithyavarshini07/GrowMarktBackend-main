@@ -1,21 +1,30 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { api } from "@/lib/api";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import "./monthlyObjective.css";
 
 const MONTHS = [
-  "September 2023",
-  "October 2023",
-  "November 2023",
-  "December 2023",
-  "January 2024",
+  { label: "January 2026", value: "2026-01" },
+  { label: "February 2026", value: "2026-02" },
+  { label: "March 2026", value: "2026-03" },
+  { label: "April 2026", value: "2026-04" },
+  { label: "May 2026", value: "2026-05" },
+  { label: "June 2026", value: "2026-06" },
+  { label: "July 2026", value: "2026-07" },
+  { label: "August 2026", value: "2026-08" },
+  { label: "September 2026", value: "2026-09" },
+  { label: "October 2026", value: "2026-10" },
+  { label: "November 2026", value: "2026-11" },
+  { label: "December 2026", value: "2026-12" },
 ];
 
 export default function MonthlyObjective() {
 const router = useRouter();
-  const [month, setMonth] = useState("November 2023");
-  const [reach, setReach] = useState("3.0M");
+  const [month, setMonth] = useState("2026-07");
+ const [reach, setReach] = useState("3000000");
   const [postCount, setPostCount] = useState("48");
   const [engagementRate, setEngagementRate] = useState(4.5);
 
@@ -24,6 +33,49 @@ const router = useRouter();
     return Math.max(0, Math.min(10, v));
   }, [engagementRate]);
 
+  useEffect(() => {
+  async function loadObjective() {
+    try {
+ 
+     const data = await api.campaigns.getObjective(month);
+
+if (data) {
+  setReach(String(data.targetReach));
+  setPostCount(String(data.postCount));
+  setEngagementRate(data.targetEngagementRate);
+} else {
+  setReach("");
+  setPostCount("");
+  setEngagementRate(0);
+}
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  loadObjective();
+}, [month]);
+
+async function saveObjective() {
+  try {
+    if (!reach || !postCount) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    await api.campaigns.setObjective({
+      month,
+      targetReach: Number(reach),
+      postCount: Number(postCount),
+      targetEngagementRate: engagementRate,
+    });
+
+    alert("Monthly objective saved successfully.");
+    router.back();
+  } catch (err: any) {
+    alert(err.message);
+  }
+}
   return (
     <div className="mo-page">
       <div className="mo-bg">
@@ -67,7 +119,7 @@ const router = useRouter();
 
       <div className="mo-overlay" role="presentation">
         <div className="mo-modal" role="dialog" aria-modal="true" aria-label="Set new monthly objective">
-          <button className="mo-close" onClick={() => router.back(-1)} aria-label="Close">
+          <button className="mo-close" onClick={() => router.back()}aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path
                 d="M7 7l10 10M17 7 7 17"
@@ -85,10 +137,13 @@ const router = useRouter();
           <div className="mo-label">TARGET MONTH</div>
           <div className="mo-select">
             <select value={month} onChange={(e) => setMonth(e.target.value)} aria-label="Target month">
-              {MONTHS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
+{MONTHS.map((m) => (
+    <option
+        key={m.value}
+        value={m.value}
+    >
+        {m.label}
+    </option>
               ))}
             </select>
             <span className="mo-select-chev" aria-hidden="true">
@@ -126,12 +181,12 @@ const router = useRouter();
                 <div className="mo-row-label">TARGET REACH</div>
                 <div className="mo-row-sub">Projected monthly impressions</div>
               </div>
-              <input
-                className="mo-value"
-                value={reach}
-                onChange={(e) => setReach(e.target.value)}
-                aria-label="Target reach"
-              />
+<input
+  type="number"
+  className="mo-value"
+  value={reach}
+  onChange={(e) => setReach(e.target.value)}
+/>
             </div>
 
             <div className="mo-row">
@@ -139,12 +194,12 @@ const router = useRouter();
                 <div className="mo-row-label">POST COUNT</div>
                 <div className="mo-row-sub">Monthly publishing volume</div>
               </div>
-              <input
-                className="mo-value"
-                value={postCount}
-                onChange={(e) => setPostCount(e.target.value)}
-                aria-label="Post count"
-              />
+<input
+  type="number"
+  className="mo-value"
+  value={postCount}
+  onChange={(e) => setPostCount(e.target.value)}
+/>
             </div>
 
             <div className="mo-row mo-row-eng">
@@ -155,13 +210,18 @@ const router = useRouter();
                 </div>
                 <div className="mo-eng-num" aria-label="Engagement rate value">
                   {engagementPct.toFixed(1)}%
+              
                 </div>
               </div>
-
-              <div className="mo-bar" aria-hidden="true">
-                <div className="mo-bar-fill" style={{ width: `${(engagementPct / 10) * 100}%` }} />
-              </div>
-
+              <input
+  type="range"
+  min="0"
+  max="10"
+  step="0.1"
+  value={engagementRate}
+  onChange={(e) => setEngagementRate(Number(e.target.value))}
+  className="mo-slider"
+/>
               <div className="mo-eng-scale">
                 <span>0% BASE</span>
                 <span>10% GROWTH CAP</span>
@@ -169,10 +229,16 @@ const router = useRouter();
             </div>
           </div>
 
-          <button className="mo-primary" onClick={() => router.back(-1)}>
+          <button
+  className="mo-primary"
+  onClick={saveObjective}
+>
             SET OBJECTIVE
           </button>
-          <button className="mo-secondary" onClick={() => router.back(-1)}>
+<button
+  className="mo-secondary"
+  onClick={() => router.back()}
+>
             CANCEL &amp; RETURN
           </button>
         </div>

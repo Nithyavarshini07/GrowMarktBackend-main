@@ -340,23 +340,26 @@ padding: 0;
 /* ===== Timeline ===== */
 .settings-timeline{
   display:grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap:14px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap:10px;
   align-items:start;
   margin-bottom:20px;
+  width:100%;
 }
 .settings-day{
   background:#F5F7FB;
   border-radius:18px;
-  padding:12px;
+  padding:8px;
   min-height:160px;
+  min-width:0;
 }
 .settings-day-active{padding:12px;}
 .settings-day-top{
   display:flex;
   justify-content:space-between;
   align-items:baseline;
-  padding:2px 4px 12px;
+  padding:2px 2px 8px;
+  min-width:0;
 }
 .settings-day-name{
   font-size:11px;
@@ -374,8 +377,9 @@ padding: 0;
   background:#fff;
   border:1px solid #E6EAF1;
   border-radius:16px;
-  padding:14px 14px 12px;
+  padding:10px;
   box-shadow:0 10px 26px rgba(15,23,42,.06);
+  min-width:0;
 }
 .settings-event + .settings-event{margin-top:12px;}
 .settings-event-live{
@@ -467,7 +471,7 @@ padding: 0;
 }
 
 .settings-empty{
-  height:86px;
+  height:76px;
   display:flex;
   flex-direction:column;
   justify-content:center;
@@ -476,6 +480,7 @@ padding: 0;
   border-radius:16px;
   background:rgba(255,255,255,.35);
   margin-top:8px;
+  min-width:0;
 }
 .settings-empty-right{opacity:.9;}
 .settings-empty-title{
@@ -887,7 +892,6 @@ padding: 0;
 
 /* keep proportions similar to screenshot */
 @media (max-width: 1200px){
-  .settings-timeline{grid-template-columns: repeat(4, 1fr);}
   .settings-kpis{grid-template-columns:1fr;}
   .settings-goal-grid{grid-template-columns:1fr;}
   .settings-feed-grid{grid-template-columns:1fr;}

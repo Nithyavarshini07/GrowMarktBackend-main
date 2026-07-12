@@ -86,7 +86,14 @@ export interface GeneratedPost {
   aiProvider?: string;
   createdAt: string;
   updatedAt: string;
+  title?: string;
+  description?: string;
+  reach?: number;
+  engagementRate?: number;
+  shares?: number;
+  content?: string;
 }
+
 
 export interface ContentSuggestion {
   platform: "linkedin" | "instagram" | "facebook" | "twitter";

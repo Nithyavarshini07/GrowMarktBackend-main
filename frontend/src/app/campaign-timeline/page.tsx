@@ -7,6 +7,35 @@ import { useAuth } from "@/lib/auth-context";
 import "../dashboard/Dashboard.css";
 import "./campaignTimeline.css";
 
+type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+
+interface ActivityItem {
+  _id?: string;
+  id?: string;
+  title?: string;
+  name?: string;
+  type?: string;
+  platform?: string;
+  createdAt?: string;
+  scheduledDate?: string;
+  eventDate?: string;
+  timestamp?: string;
+  meta?: { platform?: string };
+}
+
+interface DashboardOverview {
+  growth?: number;
+  activeUsers?: number;
+  performance?: number;
+}
+
+interface MonthlyObjective {
+  month?: string;
+  targetReach?: number;
+  postCount?: number;
+  targetEngagementRate?: number;
+}
+
 
 function IconSearch(props) {
   return (
@@ -32,48 +61,94 @@ const Settings = () => {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-const [posts, setPosts] = useState<GeneratedPost[]>([]);
-const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [posts, setPosts] = useState<GeneratedPost[]>([]);
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+ const [dashboard, setDashboard] = useState<DashboardOverview | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+const [monthlyObjective, setMonthlyObjective] = useState<MonthlyObjective | null>(null);
 
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("");
 
-const filteredPosts = posts.filter(post =>
-  post.title.toLowerCase().includes(search.toLowerCase())
-);
+  const draftPosts = posts.filter(
+    (post) => post.status?.toUpperCase() === "DRAFT"
+  );
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push("/login");
-    }
-  }, [authLoading, user, router]);
+  const publishedPosts = posts.filter(
+    (post) => post.status?.toUpperCase() === "PUBLISHED"
+  );
+
+  const scheduledCampaigns = campaigns.filter(
+    (c) => c.status?.toUpperCase() === "SCHEDULED"
+  );
+
+  const activeCampaigns = campaigns.filter(
+    (c) =>
+      c.status?.toUpperCase() === "LIVE" ||
+      c.status?.toUpperCase() === "ACTIVE"
+  );
+
+  const filteredDraftPosts = draftPosts.filter((post) =>
+    (post.title || post.headline || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  const filteredScheduledCampaigns = scheduledCampaigns.filter((campaign) =>
+    (campaign.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
+  const filteredPublishedPosts = publishedPosts.filter((post) =>
+    (post.title || post.headline || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
+  );
+
 
   useEffect(() => {
     if (authLoading || !user) return;
 
+    const currentMonth = new Date().toISOString().slice(0, 7);
+
     const fetchData = async () => {
       try {
-const [postsData, campaignsData] =
-await Promise.all([
-api.posts.list(),
-api.campaigns.list(),
-]);
+        const [
+          postsData,
+          campaignsData,
+          dashboardData,
+          activityData,
+          objectiveData,
+        ] = await Promise.all([
+          api.posts.list(),
+          api.campaigns.list(),
+          api.dashboard.overview(),
+          api.activity.get(),
+  api.campaigns.getObjective(currentMonth).catch((err) => {
+    console.error("Failed to fetch objective:", err);
+    return null;
+}),
+        ]);
 
-          console.log("Posts:", postsData);
-console.log("Campaigns:", JSON.stringify(campaignsData, null, 2));
-console.log("Objective Data");
-
-
+        console.log("Posts:", postsData);
+        console.log("Campaigns:", campaignsData);
+        console.log("Dashboard:", dashboardData);
+        console.log("Activity:", JSON.stringify(activityData, null, 2));
+        console.log("Objective:", objectiveData);
 
         setPosts(postsData);
         setCampaigns(campaignsData);
+        setDashboard(dashboardData);
+        setActivity(Array.isArray(activityData) ? activityData : []);
+        setMonthlyObjective(objectiveData);
 
       } catch (err: any) {
-  console.error(err);
-  setError(err.message || "Something went wrong");
-} finally {
+        console.error(err);
+        setError(err.message || "Something went wrong");
+      } finally {
         setLoading(false);
       }
     };
@@ -82,63 +157,122 @@ console.log("Objective Data");
   }, [authLoading, user]);
 
   if (authLoading || loading) {
-  return <div>Loading...</div>;
-}
+    return <div>Loading...</div>;
+  }
 
-if (error) {
-  return <div>{error}</div>;
-}
+  if (error) {
+    return <div>{error}</div>;
+  }
 
-if (!user) {
-  return null;
-}
+  if (!user) {
+    return null;
+  }
 
-const getCampaignForDay = (day: string) => {
-  return campaigns.find((campaign) => {
-    const campaignDay = new Date(campaign.startDate)
-      .toLocaleDateString("en-US", { weekday: "short" })
-      .toUpperCase();
+  const getActivityDate = (item: ActivityItem): Date | null => {
+    const dateStr =
+      item.createdAt ||
+      item.scheduledDate ||
+      item.eventDate ||
+      item.timestamp;
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
 
-    return campaignDay === day;
-  });
-};
+  const getWeekdayFromDate = (date: Date): Weekday => {
+    return date
+      .toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })
+      .toUpperCase() as Weekday;
+  };
 
-const monCampaign = getCampaignForDay("MON");
-const tueCampaign = getCampaignForDay("TUE");
-const wedCampaign = getCampaignForDay("WED");
-const thuCampaign = getCampaignForDay("THU");
-const friCampaign = getCampaignForDay("FRI");
-const satCampaign = getCampaignForDay("SAT");
-const sunCampaign = getCampaignForDay("SUN");
+  const getActivitiesForDay = (day: Weekday): ActivityItem[] => {
+    return activity.filter((item) => {
+      const date = getActivityDate(item);
+      if (!date) return false;
+      return getWeekdayFromDate(date) === day;
+    });
+  };
 
-const publishedPosts = posts.filter(
-  (post) => post.status?.toUpperCase() === "PUBLISHED"
-);
+  const getDayNumber = (day: Weekday, dayCampaign?: { startDate?: string }) => {
+    if (dayCampaign?.startDate) {
+      return new Date(dayCampaign.startDate).getDate();
+    }
+    const dayActivities = getActivitiesForDay(day);
+    if (dayActivities.length > 0) {
+      const date = getActivityDate(dayActivities[0]);
+      if (date) return date.getDate();
+    }
+    return "-";
+  };
 
-const scheduledCampaigns = campaigns.filter(
-  (c) => c.status?.toUpperCase() === "SCHEDULED"
-);
+  const getActivityPlatform = (item: ActivityItem): string => {
+    const platform = item.meta?.platform || item.platform;
+    if (platform) return platform.toUpperCase();
+    if (item.type) return item.type.toUpperCase();
+    return "INTERNAL";
+  };
 
-const activeCampaigns = campaigns.filter(
-  (c) =>
-    c.status?.toUpperCase() === "LIVE" ||
-    c.status?.toUpperCase() === "ACTIVE"
-);
+  const renderActivityCard = (item: ActivityItem) => (
+    <div
+      key={item._id || item.id}
+      className="settings-event settings-event-muted"
+    >
+      <div className="settings-event-title">
+        {item.title || item.name || "Untitled Activity"}
+      </div>
 
-const totalReach = publishedPosts.reduce(
-  (sum, post) => sum + (post.reach || 0),
-  0
-);
+      <div className="settings-event-meta settings-event-meta-muted">
+        <span className="settings-dot settings-dot-gray" />
+        <span>{getActivityPlatform(item)}</span>
+      </div>
+    </div>
+  );
 
-const avgEngagement =
-  publishedPosts.length > 0
-    ? (
-        publishedPosts.reduce(
-          (sum, post) => sum + (post.engagementRate || 0),
-          0
-        ) / publishedPosts.length
-      ).toFixed(2)
-    : "0";
+  const getCampaignForDay = (day: Weekday) => {
+    return campaigns.find((campaign) => {
+      if (!campaign.startDate) return false;
+      const date = new Date(campaign.startDate);
+      const campaignDay = date.toLocaleDateString("en-US", {
+        weekday: "short",
+        timeZone: "UTC"
+      }).toUpperCase();
+      return campaignDay === day;
+    });
+  };
+
+  const getChannelIcon = (platform?: string) => {
+    const p = platform?.toLowerCase() || "";
+    if (p === "instagram") return "/assets/instagram.png";
+    if (p === "linkedin") return "/assets/linkedin2.png";
+    if (p === "twitter" || p === "x") return "/assets/twitter.png";
+    if (p === "facebook") return "/assets/linked.png";
+    return "/assets/instagram.png";
+  };
+
+  const monCampaign = getCampaignForDay("MON");
+  const tueCampaign = getCampaignForDay("TUE");
+  const wedCampaign = getCampaignForDay("WED");
+  const thuCampaign = getCampaignForDay("THU");
+  const friCampaign = getCampaignForDay("FRI");
+  const satCampaign = getCampaignForDay("SAT");
+  const sunCampaign = getCampaignForDay("SUN");
+
+  const totalReach = publishedPosts.reduce(
+    (sum, post) => sum + (post.reach || 0),
+    0
+  );
+
+  const avgEngagement =
+    publishedPosts.length > 0
+      ? (
+          publishedPosts.reduce(
+            (sum, post) => sum + (post.engagementRate || 0),
+            0
+          ) / publishedPosts.length
+        ).toFixed(2)
+      : "0";
+
+
 
 return (
     <div className="dashboard-layout">
@@ -205,17 +339,14 @@ return (
               </div>
 
               <div className="profile-info">
-<p className="user-name">{user.name}</p>
+<p className="user-name">{(user as any).name}</p>
 
-<p className="user-role">{user.role}</p>
+<p className="user-role">{(user as any).role || "Premium Curator"}</p>
               </div>
 
             </div>
 
-            <img
-   src={user.profileImage || "/assets/alex.jpg"}
-   alt={user.name}
-/>
+            <img src={(user as any).profileImage || "/assets/alex.jpg"} alt="avatar" className="avatar" />
 
           </div>
 
@@ -237,7 +368,7 @@ return (
     
     <div className="segment-control">
       <button className="segment-btn segment-btn-active">DAYS</button>
-      <button className="segment-btn" onClick={() => router.push("/monthly-objective")}>
+      <button className="segment-btn">
         MONTHLY
       </button>
 <button className="segment-btn segment-channels">
@@ -261,232 +392,264 @@ return (
         <section className="settings-timeline">
           <div className="settings-day">
             <div className="settings-day-top">
-<div className="settings-day-name">
-  MON
-</div>
- <div className="settings-day-num">
-  {monCampaign ? new Date(monCampaign.startDate).getDate() : 12}
-</div>
+              <div className="settings-day-name">MON</div>
+              <div className="settings-day-num">{getDayNumber("MON", monCampaign)}</div>
             </div>
-            <div className="settings-event settings-event-live">
-<div className="settings-pill settings-pill-live">
-  {monCampaign?.status ?? "LIVE"}
-</div>
-<div className="settings-event-title">
-  {monCampaign?.name ?? "Spring Collection Launch Video"}
-</div>
-              <div className="settings-event-meta">
-                <span className="settings-dot settings-dot-green" />
-                                    <img
-  src="/assets/instagram.png"
-  alt="Instagram"
-  className="settings-dot settings-dot-blue"
-/>
-<span>
-  {monCampaign?.channels?.[0]?.toUpperCase() ?? "INSTAGRAM"}
-</span>
-              </div>
-            </div>
-            <div className="settings-event settings-event-muted">
-              <div className="settings-event-title">Influencer Briefing</div>
-              <div className="settings-event-meta settings-event-meta-muted">
-                <span className="settings-dot settings-dot-gray" />
 
-                <span>INTERNAL</span>
+            {monCampaign && (
+              <div className="settings-event settings-event-live">
+                <div className="settings-pill settings-pill-live">
+                  {monCampaign.status}
+                </div>
+                <div className="settings-event-title">{monCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <span className="settings-dot settings-dot-green" />
+                  <img
+                    src={getChannelIcon(monCampaign.channels?.[0])}
+                    alt={monCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {monCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
+
+            {getActivitiesForDay("MON")
+              .filter(
+                (item) =>
+                  (item.title || item.name || "").trim().toLowerCase() !==
+                  "campaign created"
+              )
+              .map(renderActivityCard)}
           </div>
 
-<div className="settings-day">
-  <div className="settings-day-top">
-    <div className="settings-day-name">TUE</div>
-    <div className="settings-day-num">
-      {tueCampaign ? new Date(tueCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
+          <div className="settings-day">
+            <div className="settings-day-top">
+              <div className="settings-day-name">TUE</div>
+              <div className="settings-day-num">{getDayNumber("TUE", tueCampaign)}</div>
+            </div>
 
-  {tueCampaign ? (
-    <div className="settings-event">
-      <div className="settings-pill settings-pill-draft">
-        {tueCampaign.status}
-      </div>
+            {tueCampaign ? (
+              <div className="settings-event">
+                <div className="settings-pill settings-pill-draft">
+                  {tueCampaign.status}
+                </div>
+                <div className="settings-event-title">{tueCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(tueCampaign.channels?.[0])}
+                    alt={tueCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {tueCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
-      <div className="settings-event-title">
-        {tueCampaign.name}
-      </div>
+            {[
+              ...getActivitiesForDay("TUE"),
+              ...activity.filter(
+                (item) =>
+                  (item.title || item.name || "").trim().toLowerCase() ===
+                    "campaign created" &&
+                  !getActivitiesForDay("TUE").some(
+                    (tueItem) =>
+                      (tueItem._id || tueItem.id) === (item._id || item.id)
+                  )
+              ),
+            ].map(renderActivityCard)}
 
-      <div className="settings-event-meta">
-        <span className="settings-dot settings-dot-blue" />
-        <span>
-          {tueCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-empty">
-      <div className="settings-empty-title">No events</div>
-      <div className="settings-empty-sub">scheduled</div>
-    </div>
-  )}
-</div>
+            {!tueCampaign &&
+              getActivitiesForDay("TUE").length === 0 &&
+              !activity.some(
+                (item) =>
+                  (item.title || item.name || "").trim().toLowerCase() ===
+                  "campaign created"
+              ) && (
+              <div className="settings-empty">
+                <div className="settings-empty-title">No events</div>
+                <div className="settings-empty-sub">scheduled</div>
+              </div>
+            )}
+          </div>
 
           <div className="settings-day settings-day-active">
-  <div className="settings-day-top">
-    <div className="settings-day-name">WED</div>
-    <div className="settings-day-num">
-      {wedCampaign ? new Date(wedCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
+            <div className="settings-day-top">
+              <div className="settings-day-name">WED</div>
+              <div className="settings-day-num">{getDayNumber("WED", wedCampaign)}</div>
+            </div>
 
-  {wedCampaign ? (
-    <div className="settings-event settings-event-dark">
-      <div className="settings-pill settings-pill-plan">
-        {wedCampaign.status}
-      </div>
+            {wedCampaign ? (
+              <div className="settings-event settings-event-dark">
+                <div className="settings-pill settings-pill-plan">
+                  {wedCampaign.status}
+                </div>
+                <div className="settings-event-title">{wedCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(wedCampaign.channels?.[0])}
+                    alt={wedCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {wedCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
-      <div className="settings-event-title">
-        {wedCampaign.name}
-      </div>
+            {getActivitiesForDay("WED").map(renderActivityCard)}
 
-      <div className="settings-event-meta">
-        <span>
-          {wedCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-empty">
-      <div className="settings-empty-title">No events</div>
-      <div className="settings-empty-sub">scheduled</div>
-    </div>
-  )}
-</div>
-          <div className="settings-day">
-  <div className="settings-day-top">
-    <div className="settings-day-name">THU</div>
-    <div className="settings-day-num">
-      {thuCampaign ? new Date(thuCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
-
-  {thuCampaign ? (
-    <div className="settings-event">
-      <div className="settings-pill">
-        {thuCampaign.status}
-      </div>
-
-      <div className="settings-event-title">
-        {thuCampaign.name}
-      </div>
-
-      <div className="settings-event-meta">
-        <span>
-          {thuCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-empty">
-      <div className="settings-empty-title">No events</div>
-      <div className="settings-empty-sub">scheduled</div>
-    </div>
-  )}
-</div>
+            {!wedCampaign && getActivitiesForDay("WED").length === 0 && (
+              <div className="settings-empty">
+                <div className="settings-empty-title">No events</div>
+                <div className="settings-empty-sub">scheduled</div>
+              </div>
+            )}
+          </div>
 
           <div className="settings-day">
-  <div className="settings-day-top">
-    <div className="settings-day-name">FRI</div>
-    <div className="settings-day-num">
-      {friCampaign ? new Date(friCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
+            <div className="settings-day-top">
+              <div className="settings-day-name">THU</div>
+              <div className="settings-day-num">{getDayNumber("THU", thuCampaign)}</div>
+            </div>
 
-  {friCampaign ? (
-    <div className="settings-event">
-      <div className="settings-pill settings-pill-ready">
-        {friCampaign.status}
-      </div>
+            {thuCampaign ? (
+              <div className="settings-event">
+                <div className="settings-pill">{thuCampaign.status}</div>
+                <div className="settings-event-title">{thuCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(thuCampaign.channels?.[0])}
+                    alt={thuCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {thuCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
-      <div className="settings-event-title">
-        {friCampaign.name}
-      </div>
+            {getActivitiesForDay("THU")
+  .filter(
+    (item) =>
+      (item.title || item.name || "").trim().toLowerCase() !==
+      "campaign created"
+  )
+  .map(renderActivityCard)}
 
-      <div className="settings-event-meta">
-        <span>
-          {friCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-empty">
-      <div className="settings-empty-title">No events</div>
-      <div className="settings-empty-sub">scheduled</div>
-    </div>
-  )}
-</div>
-
-          <div className="settings-day">
-  <div className="settings-day-top">
-    <div className="settings-day-name">SAT</div>
-    <div className="settings-day-num">
-      {satCampaign ? new Date(satCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
-
-  {satCampaign ? (
-    <div className="settings-event">
-      <div className="settings-pill">
-        {satCampaign.status}
-      </div>
-
-      <div className="settings-event-title">
-        {satCampaign.name}
-      </div>
-
-      <div className="settings-event-meta">
-        <span>
-          {satCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-add">
-      <div className="settings-add-btn">+</div>
-    </div>
-  )}
-</div>
+            {!thuCampaign && getActivitiesForDay("THU").length === 0 && (
+              <div className="settings-empty">
+                <div className="settings-empty-title">No events</div>
+                <div className="settings-empty-sub">scheduled</div>
+              </div>
+            )}
+          </div>
 
           <div className="settings-day">
-  <div className="settings-day-top">
-    <div className="settings-day-name">SUN</div>
-    <div className="settings-day-num">
-      {sunCampaign ? new Date(sunCampaign.startDate).getDate() : "-"}
-    </div>
-  </div>
+            <div className="settings-day-top">
+              <div className="settings-day-name">FRI</div>
+              <div className="settings-day-num">{getDayNumber("FRI", friCampaign)}</div>
+            </div>
 
-  {sunCampaign ? (
-    <div className="settings-event">
-      <div className="settings-pill">
-        {sunCampaign.status}
-      </div>
+            {friCampaign ? (
+              <div className="settings-event">
+                <div className="settings-pill settings-pill-ready">
+                  {friCampaign.status}
+                </div>
+                <div className="settings-event-title">{friCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(friCampaign.channels?.[0])}
+                    alt={friCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {friCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
 
-      <div className="settings-event-title">
-        {sunCampaign.name}
-      </div>
+            {getActivitiesForDay("FRI").map(renderActivityCard)}
 
-      <div className="settings-event-meta">
-        <span>
-          {sunCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
-        </span>
-      </div>
-    </div>
-  ) : (
-    <div className="settings-empty settings-empty-right">
-      <div className="settings-empty-title">No events</div>
-      <div className="settings-empty-sub">scheduled</div>
-    </div>
-  )}
-</div>
+            {!friCampaign && getActivitiesForDay("FRI").length === 0 && (
+              <div className="settings-empty">
+                <div className="settings-empty-title">No events</div>
+                <div className="settings-empty-sub">scheduled</div>
+              </div>
+            )}
+          </div>
+
+          <div className="settings-day">
+            <div className="settings-day-top">
+              <div className="settings-day-name">SAT</div>
+              <div className="settings-day-num">{getDayNumber("SAT", satCampaign)}</div>
+            </div>
+
+            {satCampaign ? (
+              <div className="settings-event">
+                <div className="settings-pill">{satCampaign.status}</div>
+                <div className="settings-event-title">{satCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(satCampaign.channels?.[0])}
+                    alt={satCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {satCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {getActivitiesForDay("SAT").map(renderActivityCard)}
+
+            {!satCampaign && getActivitiesForDay("SAT").length === 0 && (
+              <div className="settings-add">
+                <div className="settings-add-btn">+</div>
+              </div>
+            )}
+          </div>
+
+          <div className="settings-day">
+            <div className="settings-day-top">
+              <div className="settings-day-name">SUN</div>
+              <div className="settings-day-num">{getDayNumber("SUN", sunCampaign)}</div>
+            </div>
+
+            {sunCampaign ? (
+              <div className="settings-event">
+                <div className="settings-pill">{sunCampaign.status}</div>
+                <div className="settings-event-title">{sunCampaign.name}</div>
+                <div className="settings-event-meta">
+                  <img
+                    src={getChannelIcon(sunCampaign.channels?.[0])}
+                    alt={sunCampaign.channels?.[0] || "Channel"}
+                    className="settings-dot settings-dot-blue"
+                  />
+                  <span>
+                    {sunCampaign.channels?.[0]?.toUpperCase() || "CHANNEL"}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+
+            {getActivitiesForDay("SUN").map(renderActivityCard)}
+
+            {!sunCampaign && getActivitiesForDay("SUN").length === 0 && (
+              <div className="settings-empty settings-empty-right">
+                <div className="settings-empty-title">No events</div>
+                <div className="settings-empty-sub">scheduled</div>
+              </div>
+            )}
+          </div>
         </section>
 
         <section className="settings-kpis">
@@ -513,7 +676,7 @@ return (
             </div>
             <div className="settings-kpi-value">
               <span className="settings-kpi-big">{scheduledCampaigns.length}</span>
-              <span className="settings-kpi-delta">+12% vs LW</span>
+              <span className="settings-kpi-delta">{dashboard?.growth ?? 0}%</span>
             </div>
             <div className="settings-mini-bars">
               <span className="settings-mini-bar" />
@@ -567,7 +730,7 @@ return (
   alt="Alex"
   className="settings-av settings-av-3"
 />
-              <span className="settings-av settings-av-more">+120</span>
+              <span className="settings-av settings-av-more">+{dashboard?.activeUsers ?? 0}</span>
             </div>
           </div>
 
@@ -592,28 +755,39 @@ return (
             <div className="settings-progress">
               <div className="settings-progress-top">
                 <span>PERFORMANCE TARGET</span>
-                <span>85% ACHIEVED</span>
+                <span>{dashboard?.performance ?? 0}% ACHIEVED</span>
               </div>
-              <div className="settings-progress-bar">
-                <div className="settings-progress-fill" />
-              </div>
+<div className="settings-progress-bar">
+  <div
+    className="settings-progress-fill"
+    style={{
+      width: `${dashboard?.performance ?? 0}%`,
+    }}
+  />
+</div>
             </div>
           </div>
         </section>
 
 <section className="settings-goals">
-  {campaigns.length === 0 ? (
+{!monthlyObjective ? (
     <div>No Monthly Objective Found</div>
-  ) : (
+) : (
     <>
       <div className="settings-goals-top">
         <div>
           <div className="settings-section-title">
             Monthly Campaign Goals
           </div>
-          <div className="settings-section-sub">
-            Strategic objectives for October 2024
-          </div>
+<div className="settings-section-sub">
+  Strategic objectives for{" "}
+  {monthlyObjective?.month
+    ? new Date(monthlyObjective.month + "-01").toLocaleString("en-US", {
+        month: "long",
+        year: "numeric",
+      })
+    : "July 2026"}
+</div>
         </div>
 
         <button
@@ -638,17 +812,31 @@ return (
 
           <div className="settings-goal-value">
             <span className="settings-goal-big">
-              {campaigns[0]?.goals?.targetReach ?? 0}
+             {monthlyObjective?.targetReach ?? 0}
             </span>
-            <span className="settings-goal-small">/ 3.0M goal</span>
+            <span className="settings-goal-small">
+goal
+</span>
           </div>
 
           <div className="settings-goal-bar">
-            <div className="settings-goal-fill settings-goal-fill-blue" />
-          </div>
+  <div
+    className="settings-goal-fill settings-goal-fill-blue"
+    style={{
+      width: `${
+        monthlyObjective?.targetReach
+          ? Math.min(
+              (totalReach / monthlyObjective.targetReach) * 100,
+              100
+            )
+          : 0
+      }%`,
+    }}
+  />
+</div>
         </div>
 
-        <div className="settings-goal">
+                <div className="settings-goal">
           <div className="settings-goal-head">
             <div className="settings-goal-label">POST COUNT</div>
             <div className="settings-goal-state settings-state-risk">
@@ -658,16 +846,31 @@ return (
 
           <div className="settings-goal-value">
             <span className="settings-goal-big">
-              {campaigns[0]?.goals?.targetCount ?? 0}
+              {monthlyObjective?.postCount ?? 0}
             </span>
-            <span className="settings-goal-small">/ 500 goal</span>
+            <span className="settings-goal-small">goal</span>
           </div>
 
           <div className="settings-goal-bar">
-            <div className="settings-goal-fill settings-goal-fill-slate" />
+            <div
+              className="settings-goal-fill settings-goal-fill-slate"
+              style={{
+                width: `${
+                  monthlyObjective?.postCount
+                    ? Math.min(
+                        (posts.length /
+                          monthlyObjective.postCount) *
+                          100,
+                        100
+                      )
+                    : 0
+                }%`,
+              }}
+            />
           </div>
         </div>
 
+        {/* ENGAGEMENT RATE */}
         <div className="settings-goal">
           <div className="settings-goal-head">
             <div className="settings-goal-label">
@@ -680,20 +883,34 @@ return (
 
           <div className="settings-goal-value">
             <span className="settings-goal-big">
-              {`${campaigns[0]?.goals?.targetEngagementRate ?? 0}%`}
+              {monthlyObjective?.targetEngagementRate ?? 0}
             </span>
-            <span className="settings-goal-small">/ 4.0% goal</span>
+            <span className="settings-goal-small">goal</span>
           </div>
 
           <div className="settings-goal-bar">
-            <div className="settings-goal-fill settings-goal-fill-green" />
+            <div
+              className="settings-goal-fill settings-goal-fill-green"
+              style={{
+                width: `${
+                  monthlyObjective?.targetEngagementRate
+                    ? Math.min(
+                        (Number(avgEngagement) /
+                          monthlyObjective.targetEngagementRate) *
+                          100,
+                        100
+                      )
+                    : 0
+                }%`,
+              }}
+            />
           </div>
         </div>
+
       </div>
     </>
   )}
 </section>
-
         <section className="settings-feed">
           <div className="settings-feed-top">
             <div className="settings-section-title">Campaign Feed</div>
@@ -706,10 +923,10 @@ return (
           <div className="settings-feed-grid">
 <div className="settings-feed-col">
   <div className="settings-feed-colhead">
-    DRAFTS ({filteredPosts.length})
+  DRAFTS ({filteredDraftPosts.length})
   </div>
 
-  {filteredPosts.map((post) => (
+ {filteredDraftPosts.map((post) => (
     <div
       key={post._id}
       className="settings-feed-card settings-feed-card-draft"
@@ -764,7 +981,7 @@ return (
     SCHEDULED ({scheduledCampaigns.length})
   </div>
 
-  {campaigns.map((campaign) => (
+ {filteredScheduledCampaigns.map((campaign)=>(
     <div
       key={campaign._id}
       className="settings-feed-card settings-feed-card-scheduled"
@@ -827,7 +1044,7 @@ return (
     PUBLISHED ({publishedPosts.length})
   </div>
 
-  {publishedPosts.map((post) => (
+{filteredPublishedPosts.map((post) => (
     <div
       key={post._id}
       className="settings-feed-card settings-feed-card-pub"
