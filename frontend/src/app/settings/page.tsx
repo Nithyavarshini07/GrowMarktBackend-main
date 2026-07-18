@@ -1,188 +1,509 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, SocialStatus } from "@/lib/api";
-import AppNav from "@/components/AppNav";
+import { api } from "@/lib/api";
 
-const PLATFORMS = [
-  { key: "linkedin",  label: "LinkedIn",    oauthKey: "linkedin", bg: "bg-blue-600", color: "text-white"   },
-  { key: "facebook",  label: "Facebook",    oauthKey: "meta",     bg: "bg-indigo-600", color: "text-white" },
-  { key: "instagram", label: "Instagram",   oauthKey: "meta",     bg: "bg-pink-600",   color: "text-white" },
-  { key: "twitter",   label: "Twitter / X", oauthKey: "twitter",  bg: "bg-on-surface", color: "text-white" },
-] as const;
+import "../dashboard/Dashboard.css";
+import "../settings/settings.css";
 
-export default function SettingsPage() {
-  const { user, loading: authLoading } = useAuth();
+
+
+
+function IconDashboard(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4 13.5V6.8A2.8 2.8 0 0 1 6.8 4h3.9A2.8 2.8 0 0 1 13.5 6.8v3.9A2.8 2.8 0 0 1 10.7 13.5H4Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.5 20H6.8A2.8 2.8 0 0 1 4 17.2v-1.7h6.5V20Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14.8 20H17.2A2.8 2.8 0 0 0 20 17.2v-3.9A2.8 2.8 0 0 0 17.2 10.5h-2.4A2.8 2.8 0 0 0 12 13.3v3.9A2.8 2.8 0 0 0 14.8 20Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 4h3.2A2.8 2.8 0 0 1 20 6.8v1.9h-6V6.8A2.8 2.8 0 0 1 16.8 4H14Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCampaign(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4 8.5h16v9.2A2.3 2.3 0 0 1 17.7 20H6.3A2.3 2.3 0 0 1 4 17.7V8.5Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 8.5V6.7A2.7 2.7 0 0 1 9.7 4h4.6A2.7 2.7 0 0 1 17 6.7v1.8"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4 12.2h16"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconAnalytics(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M4 20V4"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.5 18h13.5"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 16V12"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M12 16V8"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16 16V10"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+      <path
+        d="M20 16V6"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconCompetitors(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M16 11a4 4 0 1 0-8 0"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 20v-1.2A4.8 4.8 0 0 1 8.8 14h6.4A4.8 4.8 0 0 1 20 18.8V20"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+      <path
+        d="M20 9.8a3.2 3.2 0 0 0-2.1-3"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconSettings(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M12 15.7a3.7 3.7 0 1 0 0-7.4 3.7 3.7 0 0 0 0 7.4Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+      />
+      <path
+        d="M19.4 12a7.56 7.56 0 0 0-.1-1l2-1.6-1.9-3.3-2.5 1a7.8 7.8 0 0 0-1.7-1L15 3h-6l-.2 2.1a7.8 7.8 0 0 0-1.7 1l-2.5-1L2.7 8.4l2 1.6a7.56 7.56 0 0 0 0 2l-2 1.6 1.9 3.3 2.5-1a7.8 7.8 0 0 0 1.7 1L9 21h6l.2-2.1a7.8 7.8 0 0 0 1.7-1l2.5 1 1.9-3.3-2-1.6c.1-.3.1-.7.1-1Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconSearch(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M10.8 18.2a7.4 7.4 0 1 0 0-14.8 7.4 7.4 0 0 0 0 14.8Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M20.4 20.4l-3.9-3.9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconBell(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M18 8a6 6 0 1 0-12 0c0 7-3 7-3 7h18s-3 0-3-7Z"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 19a2 2 0 1 1-4 0"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+export default function Settings() {
   const router = useRouter();
-  const [socialStatus, setSocialStatus] = useState<SocialStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [disconnecting, setDisconnecting] = useState<string | null>(null);
-
+  const [activeTab, setActiveTab] = useState("account");
+  const [settingsData, setSettingsData] = useState<any>(null);
   useEffect(() => {
-    if (!authLoading && !user) router.push("/login");
-  }, [user, authLoading, router]);
-
-  const loadStatus = useCallback(async () => {
+  async function loadSettings() {
     try {
-      setLoading(true);
-      const data = await api.social.status();
-      setSocialStatus(data);
-    } catch { /* ignore */ }
-    finally { setLoading(false); }
-  }, []);
+      const data = await api.settings.get();
 
-  useEffect(() => { if (user) loadStatus(); }, [user, loadStatus]);
+      console.log(data);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("connected") || params.get("error")) {
-      loadStatus();
-      window.history.replaceState({}, "", window.location.pathname);
+      setSettingsData(data);
+    } catch (error) {
+      console.error(error);
     }
-  }, [loadStatus]);
+  }
 
-  const handleConnect = (oauthKey: string) => {
-    const token = localStorage.getItem("token");
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
-    window.location.href = `${baseUrl}/social-auth/${oauthKey}?token=${token}`;
-  };
+  loadSettings();
+}, []);
 
-  const handleDisconnect = async (platform: string) => {
-    if (!confirm(`Disconnect ${platform}?`)) return;
-    setDisconnecting(platform);
-    try { await api.social.disconnect(platform); await loadStatus(); }
-    catch { /* ignore */ }
-    finally { setDisconnecting(null); }
-  };
-
-  const isConnected = (key: string) => !!(socialStatus as any)?.[key]?.connected;
-  const connectedName = (key: string) => {
-    const s = (socialStatus as any)?.[key];
-    return s?.profileName || s?.pageName || null;
-  };
-
-  if (authLoading || !user) return null;
+  const [profile, setProfile] = useState({
+  name: "",
+  email: "",
+});
+  const channels = useMemo(
+    () => [
+      { key: "instagram", name: "Instagram", status: "ACTIVE", icon: "/assets/insta.png" },
+      { key: "linkedin", name: "LinkedIn", status: "CONNECTED", icon: "/assets/linkedin3.png" },
+      { key: "tiktok", name: "TikTok", status: "ACTIVE", icon: "/assets/black.png" },
+    ],
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface">
-      <AppNav />
-      <main className="ml-64 pt-20 pb-12 px-8 max-w-4xl">
-        {/* Header */}
-        <div className="mb-10">
-          <p className="text-[10px] uppercase tracking-widest text-on-surface/50 font-body font-semibold">Configuration</p>
-          <h1 className="font-display text-3xl font-extrabold text-on-surface mt-1">Settings</h1>
-          <p className="text-on-surface-variant text-sm font-body mt-1">Manage your account and social connections.</p>
+    <div className="settings-page dashboard-layout">
+      <aside className="sidebar">
+        <div className="brand-header">
+          <span className="brand-main">GrowMarkt</span>
+          <span className="brand-subtitle">THE DATA CURATOR</span>
         </div>
 
-        {/* Profile card */}
-        <div className="bg-surface-container-lowest rounded-2xl p-8 mb-8 flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-display font-bold text-2xl shadow-lg shrink-0">
-            {user.name.charAt(0).toUpperCase()}
+        <nav>
+          <ul>
+            <li onClick={() => router.push("/dashboard")}>
+              <img src="/assets/dashboard.png" alt="dashboard" className="nav-icon" />
+              DASHBOARD
+            </li>
+
+            <li onClick={() => router.push("/campaign-timeline")}>
+              <img src="/assets/campaign.png" alt="campaign" className="nav-icon" />
+              CAMPAIGN MANAGER
+            </li>
+
+            <li onClick={() => router.push("/analytics")}>
+              <img src="/assets/analytics.png" alt="analytics" className="nav-icon" />
+              ANALYTICS
+            </li>
+
+            <li onClick={() => router.push("/competitor-analysis")}>
+              <img src="/assets/competition.png" alt="competitors" className="nav-icon" />
+              COMPETITORS
+            </li>
+
+            <li className="active">
+              <img src="/assets/settings.png" alt="settings" className="nav-icon" />
+              SETTINGS
+            </li>
+          </ul>
+        </nav>
+
+        <button className="campaign-btn">+ NEW CAMPAIGN</button>
+      </aside>
+
+      <main className="settings-main">
+        <div className="settings-topbar">
+
+  {/* SEARCH */}
+  <div className="settings-search">
+    <span className="settings-search-icon">
+      <IconSearch />
+    </span>
+    <input placeholder="Search data..." />
+  </div>
+
+  <div className="user-profile">
+    <div className="user-profile-left">
+      <div className="notif-icon">
+        <img src="/assets/bell.png" alt="notification" />
+        <span className="dot"></span>
+      </div>
+
+      <div className="profile-info">
+        <p className="user-name">Alex Mercer</p>
+        <p className="user-role">PREMIUM CURATOR</p>
+      </div>
+    </div>
+
+    <img src="/assets/alex.jpg" alt="avatar" className="avatar" />
+  </div>
+
+</div>
+
+        <div className="page-content">
+        <section className="settings-header">
+          <h1>Account &amp; Team</h1>
+        <p>
+  Manage your editorial profile, connect channels, and access our intelligence support team.
+</p>
+        </section>
+
+        <section className="settings-tabs" role="tablist" aria-label="Settings sections">
+          <button
+            type="button"
+            className={activeTab === "account" ? "active" : ""}
+            onClick={() => setActiveTab("account")}
+          >
+            ACCOUNT &amp; TEAM
+          </button>
+          <button
+            type="button"
+            className={activeTab === "billing" ? "active" : ""}
+            onClick={() => router.push("/billing")}
+          >
+            BILLING &amp; PAYMENT
+          </button>
+          <button
+            type="button"
+            className={activeTab === "support" ? "active" : ""}
+            onClick={() => {
+    setActiveTab("support");
+    router.push("/help");
+}}
+          >
+            SUPPORT &amp; HELP
+          </button>
+<button
+  type="button"
+  className={activeTab === "notifications" ? "active" : ""}
+onClick={() => router.push("/notifications")}>
+  NOTIFICATIONS
+</button>
+        </section>
+
+        <div className="settings-content">
+
+  <div className="settings-left-column">
+
+    {/* Company Profile */}
+    <section className="settings-card settings-company">
+      <div className="settings-card-header">
+        <h2>Company Profile</h2>
+        <button type="button" className="settings-save">
+          SAVE CHANGES
+        </button>
+      </div>
+
+      <div className="settings-company-body">
+     <div className="settings-logo">
+  <div className="settings-logo-box">
+    <img
+      src="/assets/com.png"
+      alt="Company Logo"
+      className="settings-company-image"
+    />
+  </div>
+
+<button
+  className="settings-logo-edit"
+  type="button"
+  aria-label="Edit logo"
+>
+  <img src="/assets/cam.png" alt="edit icon" />
+</button>
+</div>
+
+        <form
+          className="settings-form"
+          onSubmit={(e) => e.preventDefault()}
+        >
+          <div className="settings-grid2">
+            <div className="settings-field">
+              <label>COMPANY NAME</label>
+              <input
+  value={settingsData?.profile?.name || ""}
+  readOnly
+/>
+            </div>
+
+            <div className="settings-field">
+              <label>WEBSITE</label>
+              <input defaultValue="https://axiom.media" />
+            </div>
           </div>
+
+          <div className="settings-field">
+            <label>BRAND TAGLINE</label>
+            <input defaultValue="Intelligence-driven growth for modern brands" />
+          </div>
+        </form>
+      </div>
+    </section>
+
+    {/* Team Management INSIDE LEFT COLUMN */}
+    <section className="settings-card settings-team">
+      <div className="settings-card-header">
+        <h2>Team Management</h2>
+
+       <button type="button" className="settings-invite">
+  <span className="settings-invite-ic">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4 20a8 8 0 0 1 16 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </span>
+
+  INVITE MEMBER
+</button>
+      </div>
+
+      <div className="settings-table">
+        <div className="settings-tr settings-th">
+          <div>MEMBER</div>
+          <div>ROLE</div>
+          <div className="settings-cell-right">ACTION</div>
+        </div>
+
+        <div className="settings-tr settings-td">
+          <div className="settings-member">
+            <div className="settings-member-avatar">
+  <img src="/assets/a.jpg" alt="user avatar" />
+</div>
+
+            <div className="settings-member-meta">
+              <div className="settings-member-name">
+                Alex Rivera
+              </div>
+
+              <div className="settings-member-email">
+                alex@axiom.media
+              </div>
+            </div>
+          </div>
+
           <div>
-            <h2 className="font-display text-xl font-bold text-on-surface">{user.name}</h2>
-            <p className="text-sm text-on-surface/60 font-body">{user.email}</p>
-            <span className="mt-1 inline-block text-[10px] uppercase tracking-widest font-body font-bold text-secondary">Premium Curator</span>
+            <span className="settings-role-pill">
+              Admin
+            </span>
+          </div>
+
+          <div className="settings-cell-right">
+            <button
+  type="button"
+  className="settings-trash"
+>
+  <img src="/assets/bin.png" alt="Delete" />
+</button>
           </div>
         </div>
+      </div>
+    </section>
 
-        {/* Social Connections */}
-        <div className="mb-6">
-          <h2 className="font-display text-lg font-bold text-on-surface mb-1">Connected Accounts</h2>
-          <p className="text-sm text-on-surface/60 font-body mb-6">
-            Connect your social accounts to enable automatic publishing when scheduled posts become due.
-          </p>
+  </div>
 
-          {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-28 rounded-xl bg-surface-container animate-pulse" />
-              ))}
+  {/* Right side */}
+  <aside className="settings-card settings-channels">
+    <div className="settings-card-header">
+      <h2>Connected Channels</h2>
+    </div>
+
+    <div className="settings-channel-list">
+      {channels.map((c) => (
+        <div key={c.key} className="settings-channel">
+          <div className="settings-channel-left">
+
+            <div className={`settings-channel-icon ${c.key}`}>
+              <img src={c.icon} alt="" />
             </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {PLATFORMS.map(platform => {
-                const connected = isConnected(platform.key);
-                const name = connectedName(platform.key);
-                const isDisconnecting = disconnecting === platform.key;
 
-                return (
-                  <div
-                    key={platform.key}
-                    className={`bg-surface-container-lowest rounded-xl p-6 border transition-all ${
-                      connected ? "border-secondary/30 bg-secondary/5" : "border-outline-variant/15"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${platform.bg} ${platform.color} font-bold`}>
-                        {platform.key[0].toUpperCase()}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-display font-semibold text-sm text-on-surface">{platform.label}</h3>
-                        {connected && name && (
-                          <p className="text-xs text-secondary font-body">{name}</p>
-                        )}
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full font-body ${
-                        connected ? "bg-secondary/10 text-secondary" : "bg-surface-container text-on-surface/40"
-                      }`}>
-                        {connected ? "✓ Connected" : "Not connected"}
-                      </span>
-                    </div>
+            <div className="settings-channel-meta">
+              <div className="settings-channel-name">
+                {c.name}
+              </div>
 
-                    {connected ? (
-                      <button
-                        onClick={() => handleDisconnect(platform.key)}
-                        disabled={isDisconnecting}
-                        className="w-full py-2.5 rounded-lg bg-error-container/30 text-error text-sm font-body font-semibold hover:bg-error-container/50 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
-                      >
-                        {isDisconnecting && <div className="w-3 h-3 border border-error border-t-transparent rounded-full animate-spin" />}
-                        Disconnect {platform.label}
-                      </button>
-                    ) : (
-                      <div className="flex flex-col gap-2">
-                        <button
-                          onClick={() => handleConnect(platform.oauthKey)}
-                          className="w-full py-2.5 rounded-lg bg-surface-container text-on-surface/70 text-sm font-body font-semibold hover:bg-primary hover:text-white transition-all"
-                        >
-                          Connect {platform.label}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1'}/social-auth/mock/${platform.key}`, {
-                                method: 'POST',
-                                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-                              });
-                              loadStatus();
-                            } catch (e) { alert('Mock failed'); }
-                          }}
-                          className="w-full py-1.5 rounded-lg border border-dashed border-outline-variant/30 text-on-surface/40 text-[10px] font-body font-bold hover:bg-secondary/5 hover:text-secondary hover:border-secondary/20 transition-all uppercase tracking-widest"
-                        >
-                          Demo Bypass (Instant Connect)
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              <div className="settings-channel-status">
+                {c.status}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Instagram note */}
-        <div className="mt-6 bg-surface-container-lowest rounded-xl p-5 border-l-4 border-l-amber-400">
-          <div className="flex gap-3">
-            <span className="text-amber-400 text-lg shrink-0">⚠</span>
-            <p className="text-xs text-on-surface/70 font-body">
-              <strong className="text-amber-600">Instagram note:</strong> Publishing requires a publicly accessible image URL.
-              Localhost images will not work — deploy to a live server or use a tunnel like{" "}
-              <a href="https://ngrok.com" target="_blank" rel="noopener noreferrer" className="text-secondary hover:underline">ngrok</a>.
-            </p>
           </div>
+
+          <button
+            type="button"
+            className="settings-disconnect"
+          >
+            DISCONNECT
+          </button>
+        </div>
+      ))}
+    </div>
+  </aside>
+
+</div>
         </div>
       </main>
     </div>

@@ -40,10 +40,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((profile) => {
           setUser(profile);
         })
-        .catch(() => {
-          localStorage.removeItem("token");
-          setToken(null);
-        })
+.catch((err) => {
+  console.error("Profile API failed:", err);
+  console.log("Token:", savedToken);
+
+  localStorage.removeItem("token");
+  setToken(null);
+})
         .finally(() => setLoading(false));
     } else {
       setLoading(false);

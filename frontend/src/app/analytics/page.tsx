@@ -13,14 +13,40 @@ export default function AnalyticsPage() {
  const router = useRouter();
 
 const { user, loading: authLoading } = useAuth();
+const [overview, setOverview] = useState(null);
+const [growthData, setGrowthData] = useState([]);
+const [performanceNodes, setPerformanceNodes] = useState([]);
+const [logs, setLogs] = useState([]);
+const [loading, setLoading] = useState(true);
 
 useEffect(() => {
-  if (!authLoading && !user) {
-    router.push("/login");
-  }
-}, [user, authLoading, router]);
+  async function loadAnalytics() {
+    try {
 
-if (authLoading || !user) return null;
+      const overviewRes = await api.analytics.overview();
+      const growthRes = await api.analytics.growth();
+      const performanceRes = await api.analytics.performance();
+      const logsRes = await api.analytics.logs();
+
+      setOverview(overviewRes);
+      setGrowthData(growthRes);
+      setPerformanceNodes(performanceRes);
+      setLogs(logsRes);
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+  if (loading) {
+    return <div>Loading...</div>;
+}
+
+  if (user) {
+    loadAnalytics();
+  }
+}, [user]);
 
   function IconSearch(props) {
   return (
@@ -134,7 +160,7 @@ if (authLoading || !user) return null;
           <div className="card">
             <p className="metric-label">AGGREGATE REACH</p>
             <div className="metric-value-row">
-              <h2>92,400</h2>
+              <h2>{overview.aggregateReach}</h2>
               <span className="green">↑ 14%</span>
             </div>
             <svg className="sparkline-small" viewBox="-5 0 110 40">
@@ -149,7 +175,7 @@ if (authLoading || !user) return null;
   INSTAGRAM
 </p>
             <div className="metric-value-row">
-              <h2>12.5k</h2>
+              <h2>{overview.instagramReach}</h2>
               <span className="green">+2.4%</span>
             </div>
             <svg className="sparkline-small" viewBox="-5 0 110 40">
@@ -164,7 +190,7 @@ if (authLoading || !user) return null;
   LINKEDIN
 </p>
             <div className="metric-value-row">
-              <h2>4.2k</h2>
+              <h2>{overview.linkedinReach}</h2>
               <span className="green">+5.1%</span>
             </div>
             <svg className="sparkline-small" viewBox="-5 0 110 40">
@@ -179,7 +205,7 @@ if (authLoading || !user) return null;
   X (TWITTER)
 </p>
             <div className="metric-value-row">
-              <h2>28.9k</h2>
+              <h2>{overview.twitterReach}</h2>
               <span className="red">-0.4%</span>
             </div>
             <svg className="sparkline-small" viewBox="-5 0 110 40">

@@ -164,7 +164,7 @@ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
 </div>
 <p className="signup-link">
   New to GrowMarkt?{" "}
-  <Link href="/create-account">Create an account</Link>
+  <Link href="/register">Create an account</Link>
 </p>
         </div>
       </section>

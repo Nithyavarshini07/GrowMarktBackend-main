@@ -69,7 +69,7 @@ const [monthlyObjective, setMonthlyObjective] = useState<MonthlyObjective | null
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+const [profile, setProfile] = useState<any>(null);
   const [search, setSearch] = useState("");
 
   const draftPosts = posts.filter(
@@ -113,25 +113,28 @@ const [monthlyObjective, setMonthlyObjective] = useState<MonthlyObjective | null
     if (authLoading || !user) return;
 
     const currentMonth = new Date().toISOString().slice(0, 7);
+    console.log(currentMonth);
 
     const fetchData = async () => {
       try {
         const [
-          postsData,
-          campaignsData,
-          dashboardData,
-          activityData,
-          objectiveData,
-        ] = await Promise.all([
-          api.posts.list(),
-          api.campaigns.list(),
-          api.dashboard.overview(),
-          api.activity.get(),
+  postsData,
+  campaignsData,
+  dashboardData,
+  activityData,
+  objectiveData,
+  profileData,
+] = await Promise.all([
+  api.posts.list(),
+  api.campaigns.list(),
+  api.dashboard.overview(),
+  api.activity.get(),
   api.campaigns.getObjective(currentMonth).catch((err) => {
     console.error("Failed to fetch objective:", err);
     return null;
-}),
-        ]);
+  }),
+  api.auth.profile(),
+]);
 
         console.log("Posts:", postsData);
         console.log("Campaigns:", campaignsData);
@@ -144,6 +147,7 @@ const [monthlyObjective, setMonthlyObjective] = useState<MonthlyObjective | null
         setDashboard(dashboardData);
         setActivity(Array.isArray(activityData) ? activityData : []);
         setMonthlyObjective(objectiveData);
+        setProfile(profileData);
 
       } catch (err: any) {
         console.error(err);
@@ -339,14 +343,22 @@ return (
               </div>
 
               <div className="profile-info">
-<p className="user-name">{(user as any).name}</p>
+<p className="user-name">
+  {profile?.name || (user as any)?.name}
+</p>
 
-<p className="user-role">{(user as any).role || "Premium Curator"}</p>
+<p className="user-role">
+  {profile?.email || "Premium Curator"}
+</p>
               </div>
 
             </div>
 
-            <img src={(user as any).profileImage || "/assets/alex.jpg"} alt="avatar" className="avatar" />
+            <img
+  src="/assets/alex.jpg"
+  alt="avatar"
+  className="avatar"
+/>
 
           </div>
 
@@ -770,37 +782,59 @@ return (
         </section>
 
 <section className="settings-goals">
-{!monthlyObjective ? (
-    <div>No Monthly Objective Found</div>
-) : (
-    <>
-      <div className="settings-goals-top">
-        <div>
-          <div className="settings-section-title">
-            Monthly Campaign Goals
-          </div>
-<div className="settings-section-sub">
-  Strategic objectives for{" "}
-  {monthlyObjective?.month
-    ? new Date(monthlyObjective.month + "-01").toLocaleString("en-US", {
-        month: "long",
-        year: "numeric",
-      })
-    : "July 2026"}
-</div>
-        </div>
-
-        <button
-          className="settings-goals-btn"
-          onClick={() => {
-            window.scrollTo(0, 0);
-            router.push("/monthly-objective");
-          }}
-        >
-          SET NEW OBJECTIVE
-        </button>
+  <div className="settings-goals-top">
+    <div>
+      <div className="settings-section-title">
+        Monthly Campaign Goals
       </div>
 
+      <div className="settings-section-sub">
+        Strategic objectives for{" "}
+        {monthlyObjective?.month
+          ? new Date(monthlyObjective.month + "-01").toLocaleString("en-US", {
+              month: "long",
+              year: "numeric",
+            })
+          : "July 2026"}
+      </div>
+    </div>
+
+    <button
+      className="settings-goals-btn"
+      onClick={() => {
+        window.scrollTo(0, 0);
+        router.push("/monthly-objective");
+      }}
+    >
+      SET NEW OBJECTIVE
+    </button>
+  </div>
+
+  {!monthlyObjective ? (
+    <div className="settings-goal-grid">
+      <div
+        className="settings-goal"
+        style={{
+          gridColumn: "1 / -1",
+          textAlign: "center",
+          padding: "50px 20px",
+        }}
+      >
+        <div
+          className="settings-section-title"
+          style={{ marginBottom: "10px" }}
+        >
+          No Monthly Objective Found
+        </div>
+
+        <div className="settings-section-sub">
+          Click <strong>SET NEW OBJECTIVE</strong> to create your first monthly
+          campaign goal.
+        </div>
+      </div>
+    </div>
+  ) : (
+    <>
       <div className="settings-goal-grid">
         <div className="settings-goal">
           <div className="settings-goal-head">
@@ -812,31 +846,29 @@ return (
 
           <div className="settings-goal-value">
             <span className="settings-goal-big">
-             {monthlyObjective?.targetReach ?? 0}
+              {monthlyObjective?.targetReach ?? 0}
             </span>
-            <span className="settings-goal-small">
-goal
-</span>
+            <span className="settings-goal-small">goal</span>
           </div>
 
           <div className="settings-goal-bar">
-  <div
-    className="settings-goal-fill settings-goal-fill-blue"
-    style={{
-      width: `${
-        monthlyObjective?.targetReach
-          ? Math.min(
-              (totalReach / monthlyObjective.targetReach) * 100,
-              100
-            )
-          : 0
-      }%`,
-    }}
-  />
-</div>
+            <div
+              className="settings-goal-fill settings-goal-fill-blue"
+              style={{
+                width: `${
+                  monthlyObjective?.targetReach
+                    ? Math.min(
+                        (totalReach / monthlyObjective.targetReach) * 100,
+                        100
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </div>
         </div>
 
-                <div className="settings-goal">
+        <div className="settings-goal">
           <div className="settings-goal-head">
             <div className="settings-goal-label">POST COUNT</div>
             <div className="settings-goal-state settings-state-risk">
@@ -858,9 +890,7 @@ goal
                 width: `${
                   monthlyObjective?.postCount
                     ? Math.min(
-                        (posts.length /
-                          monthlyObjective.postCount) *
-                          100,
+                        (posts.length / monthlyObjective.postCount) * 100,
                         100
                       )
                     : 0
@@ -870,7 +900,6 @@ goal
           </div>
         </div>
 
-        {/* ENGAGEMENT RATE */}
         <div className="settings-goal">
           <div className="settings-goal-head">
             <div className="settings-goal-label">
@@ -906,7 +935,6 @@ goal
             />
           </div>
         </div>
-
       </div>
     </>
   )}
@@ -951,12 +979,12 @@ goal
           </div>
 
           <div className="settings-feed-meta">
-            <div className="settings-feed-title">
-              {post.title}
-            </div>
+<div className="settings-feed-title">
+  {post.title || post.headline}
+</div>
 
             <div className="settings-feed-sub">
-              {post.description}
+                {post.description || post.content}
             </div>
           </div>
         </div>
@@ -1024,11 +1052,10 @@ goal
       </div>
 
 <img
-    src={campaign.image || "/assets/schedule.png"}
-    alt={campaign.name}
-
-        className="settings-feed-thumb"
-      />
+  src={campaign.imageUrl || campaign.image || "/assets/schedule.png"}
+  alt={campaign.name}
+  className="settings-feed-thumb"
+/>
 
       <div className="settings-feed-foot settings-feed-foot-green">
         {campaign.startDate
@@ -1068,9 +1095,9 @@ goal
           </div>
 
           <div className="settings-feed-meta">
-            <div className="settings-feed-title">
-              {post.title}
-            </div>
+<div className="settings-feed-title">
+  {post.title || post.headline}
+</div>
           </div>
         </div>
 
