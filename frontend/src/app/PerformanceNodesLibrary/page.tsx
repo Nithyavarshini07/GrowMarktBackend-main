@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, {useMemo, useState,useEffect,} from "react";
 import { useRouter } from "next/navigation";
-import "../Dashboard/Dashboard.css";
+import { api } from "@/lib/api";
+import "../dashboard/Dashboard.css";
 import "./performanceNodesLibrary.css";
 
 function IconSearch(props) {
@@ -294,14 +295,61 @@ function ShareIcon() {
   );
 }
 
-export default function PerformanceNodesLibrary({ nodes = defaultNodes }) {
-  const [activeTab, setActiveTab] = useState("ALL");
+export default function PerformanceNodesLibrary() {
   const router = useRouter();
-  
+
+  const [activeTab, setActiveTab] = useState("ALL");
+  const [nodes, setNodes] = useState(defaultNodes);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchNodes();
+  }, []);
+
+  const fetchNodes = async () => {
+    try {
+      setLoading(true);
+
+     const res = await api.analytics.performanceNodes();
+      console.log("Performance Nodes:", res);
+
+      // Adjust this depending on your backend response
+     const posts = Array.isArray(res.data) ? res.data : [];
+
+const formattedNodes = posts.map((post: any) => ({
+  id: post._id,
+  platform: post.platform || "INSTAGRAM",
+  title: post.title || post.caption || "Untitled Post",
+  published: post.createdAt
+  ? `PUBLISHED ${new Date(post.createdAt).toLocaleDateString()}`
+  : "PUBLISHED TODAY",
+  engagementLabel: "ENGAGEMENT",
+  engagementValue: `${post.engagementRate || post.engagement || 0}%`,
+  reachLabel: "REACH",
+  reachValue: post.reach || post.views || 0,
+  image: post.image
+  ? `http://localhost:3000/uploads/${post.image}`
+  : "/assets/node1.png",
+  mediaVariant: "instagram-1",
+  showTopPerformer: post.topPerformer ?? false,
+}));
+
+// If backend has data, use it. Otherwise keep the default cards.
+if (formattedNodes.length > 0) {
+  setNodes(formattedNodes);
+} else {
+  setNodes(defaultNodes);
+}
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (activeTab === "ALL") return nodes;
-    return nodes.filter((n) => n.platform === activeTab);
+    return nodes.filter((node) => node.platform === activeTab);
   }, [activeTab, nodes]);
 
   return (
@@ -401,9 +449,9 @@ export default function PerformanceNodesLibrary({ nodes = defaultNodes }) {
               ARCHIVE 2024
             </div>
             <h1 className="pnl-title">Performance Nodes Library</h1>
-            <div className="pnl-subtitle">
-              Found 1,284 high-impact editorial nodes
-            </div>
+<div className="pnl-subtitle">
+  Found {nodes.length} high-impact editorial nodes
+</div>
           </div>
 
           <div className="pnl-header-right">

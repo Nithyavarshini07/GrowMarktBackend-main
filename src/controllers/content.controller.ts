@@ -87,12 +87,15 @@ function normalizePlatforms(rawPlatforms: unknown): AllowedPlatform[] {
 
 // ── Controllers ────────────────────────────────────────────────────────────────
 
+
 export async function generateContent(
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
   try {
+
+    
     if (!req.userId) throw new UnauthorizedError();
 
     const { prompt } = req.body;

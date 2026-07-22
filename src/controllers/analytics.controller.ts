@@ -1147,6 +1147,21 @@ export const getPerformanceNodes = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
+    console.log("User ID:", req.userId);
+console.log("Filters:", filters);
+
+const totalPosts = await GeneratedPost.countDocuments({});
+console.log("Total Posts:", totalPosts);
+
+const publishedPosts = await GeneratedPost.countDocuments({
+  status: "published",
+});
+console.log("Published Posts:", publishedPosts);
+
+const userPosts = await GeneratedPost.countDocuments({
+  userId: req.userId,
+});
+console.log("User Posts:", userPosts);
     if (!req.userId) throw new UnauthorizedError();
     const { page, limit, skip } = parsePagination(req.query);
     const { mongoSort, sortMeta } = parseSort(
@@ -1175,6 +1190,7 @@ export const getPerformanceNodes = async (
         .limit(limit)
         .lean(),
     ]);
+    
 
     const threshold = rows.length > 0 ? rows[0] as any : null;
     const topEngagement = threshold ? Number(threshold.engagementRate || 0) : 0;

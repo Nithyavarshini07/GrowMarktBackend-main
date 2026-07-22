@@ -13,7 +13,12 @@ export default function AnalyticsPage() {
  const router = useRouter();
 
 const { user, loading: authLoading } = useAuth();
-const [overview, setOverview] = useState(null);
+const [overview, setOverview] = useState({
+  aggregateReach: 0,
+  instagramReach: 0,
+  linkedinReach: 0,
+  twitterReach: 0,
+});
 const [growthData, setGrowthData] = useState([]);
 const [performanceNodes, setPerformanceNodes] = useState([]);
 const [logs, setLogs] = useState([]);
@@ -22,26 +27,21 @@ const [loading, setLoading] = useState(true);
 useEffect(() => {
   async function loadAnalytics() {
     try {
+const overviewRes = await api.analytics.overview();
+const growthRes = await api.analytics.growthVsEngagement();
+const performanceRes = await api.analytics.performanceNodes();
+const logsRes = await api.activity.get(); // or api.logs.list()
 
-      const overviewRes = await api.analytics.overview();
-      const growthRes = await api.analytics.growth();
-      const performanceRes = await api.analytics.performance();
-      const logsRes = await api.analytics.logs();
-
-      setOverview(overviewRes);
-      setGrowthData(growthRes);
-      setPerformanceNodes(performanceRes);
-      setLogs(logsRes);
-
+setOverview(overviewRes);
+setGrowthData(growthRes);
+setPerformanceNodes(performanceRes);
+setLogs(logsRes.data?.activities || logsRes.activities || []);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
   }
-  if (loading) {
-    return <div>Loading...</div>;
-}
 
   if (user) {
     loadAnalytics();
