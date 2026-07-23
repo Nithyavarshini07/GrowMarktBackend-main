@@ -5,6 +5,36 @@
   --cup-modal-radius: 10px;
 }
 
+.cup-section input[type="date"] {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  width: 100%;
+  background: white;
+  color: #748399;
+  transition: border-color 0.2s;
+}
+
+.cup-section input[type="date"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.cup-section input[type="date"]::placeholder {
+  color: #748399;
+}
+
+/* For the date input calendar icon color */
+.cup-section input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.cup-section input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
 .cup-page{
   min-height: 100vh;
   font-family: var(--cup-font);

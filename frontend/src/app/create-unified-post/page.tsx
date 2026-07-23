@@ -163,30 +163,64 @@ const handlePublish = async () => {
   try {
     setLoading(true);
 
-await api.campaigns.create({
-    name: campaignName,
-    objective: content,
-    startDate,
-    endDate,
-    channels: [selectedChannel],
-    feedSummary: content,
+    // ✅ Validate required fields
+    if (!campaignName.trim()) {
+      alert("Please enter a campaign name");
+      setLoading(false);
+      return;
+    }
 
-    images: previews
-});
-    // 👇 Paste this here
+    if (!content.trim()) {
+      alert("Please enter campaign content");
+      setLoading(false);
+      return;
+    }
+
+    if (!startDate) {
+      alert("Please select a start date");
+      setLoading(false);
+      return;
+    }
+
+    if (!endDate) {
+      alert("Please select an end date");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ Prepare the data
+    const campaignData = {
+      name: campaignName.trim(),
+      objective: content.trim(),
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      channels: [selectedChannel],
+      feedSummary: content.trim(),
+      images: previews || [],
+      // Add status
+      status: "DRAFT"
+    };
+
+    console.log("📤 Sending campaign data:", campaignData);
+
+    await api.campaigns.create(campaignData);
+
+    // ✅ Handle schedule if enabled
     if (scheduleEnabled && scheduledAt) {
       await api.schedule.create({
         platform: selectedChannel,
-        content,
-        scheduledAt,
+        content: content.trim(),
+        scheduledAt: new Date(scheduledAt).toISOString(),
+        campaignName: campaignName.trim()
       });
     }
 
-    alert("Campaign Created Successfully!");
+    alert("✅ Campaign Created Successfully!");
     router.push("/campaign-timeline");
-  } catch (error) {
-    console.error(error);
-    alert("Failed to create campaign");
+  } catch (error: any) {
+    console.error("❌ Error creating campaign:", error);
+    console.error("Error details:", error.response?.data || error.message);
+    alert(`Failed to create campaign: ${error.message || "Unknown error"}`);
   } finally {
     setLoading(false);
   }
@@ -277,7 +311,7 @@ CAMPAIGN: {campaignName || "New Campaign"}
                 ))}
               </div>
             </div>
-            <div className="cup-section">
+<div className="cup-section">
   <div className="cup-section-title">CAMPAIGN DETAILS</div>
 
   <input
@@ -287,20 +321,29 @@ CAMPAIGN: {campaignName || "New Campaign"}
     onChange={(e) => setCampaignName(e.target.value)}
   />
 
-  <input
-    type="date"
-    value={startDate}
-    onChange={(e) => setStartDate(e.target.value)}
-  />
+  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+    <label style={{ fontSize: '14px', fontWeight: '500', color: '#334155', minWidth: '80px' }}>
+      Start Date
+    </label>
+    <input
+      type="date"
+      value={startDate}
+      onChange={(e) => setStartDate(e.target.value)}
+    />
+  </div>
 
-  <input
-    type="date"
-    value={endDate}
-    onChange={(e) => setEndDate(e.target.value)}
-  />
-
+  <div style={{ display: 'flex', alignItems: 'center' }}>
+    <label style={{ fontSize: '14px', fontWeight: '500', color: '#334155', minWidth: '80px' }}>
+      End Date
+    </label>
+    <input
+      type="date"
+      value={endDate}
+      onChange={(e) => setEndDate(e.target.value)}
+      min={startDate}
+    />
+  </div>
 </div>
-            
 
             <div className="cup-section cup-section-editor">
               <div className="cup-section-row">
@@ -424,7 +467,7 @@ e.target.value = "";
   SAVE DRAFT
 </button>
 
-              <div className="cup-toggle-wrap">
+<div className="cup-toggle-wrap">
   <div className="cup-toggle-label">SCHEDULE POST</div>
 
   <button
@@ -436,46 +479,48 @@ e.target.value = "";
   >
     <span className="cup-toggle-knob" />
   </button>
+</div>
 
-  {scheduleEnabled && (
+{scheduleEnabled && (
+  <div style={{ marginTop: '12px' }}>
     <input
       type="datetime-local"
       value={scheduledAt}
       onChange={(e) => setScheduledAt(e.target.value)}
       className="cup-schedule-input"
     />
-  )}
-</div>
+  </div>
+)}
 
 <div className="cup-spacer" />
 
-              <div className="cup-when">
-                <span className="cup-when-ico" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M7 4.8h10a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 1-2.5 2.5H7a2.5 2.5 0 0 1-2.5-2.5v-10A2.5 2.5 0 0 1 7 4.8Z"
-                      stroke="#16A34A"
-                      strokeWidth="1.8"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M8 3.8v2.5M16 3.8v2.5"
-                      stroke="#16A34A"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M6.5 9h11"
-                      stroke="#16A34A"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </span>
-                <span className="cup-when-txt">
-{scheduledAt || "Select Schedule"}
-</span>
-              </div>
+<div className="cup-when">
+  <span className="cup-when-ico" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M7 4.8h10a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 1-2.5 2.5H7a2.5 2.5 0 0 1-2.5-2.5v-10A2.5 2.5 0 0 1 7 4.8Z"
+        stroke="#16A34A"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 3.8v2.5M16 3.8v2.5"
+        stroke="#16A34A"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.5 9h11"
+        stroke="#16A34A"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  </span>
+  <span className="cup-when-txt">
+    {scheduledAt || "Select Schedule"}
+  </span>
+</div>
 
 <button
   className="cup-primary"
@@ -483,25 +528,25 @@ e.target.value = "";
   onClick={handlePublish}
   disabled={loading}
 >
-                PUBLISH NOW
-                <span className="cup-primary-ico" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M5 12h12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M13 6l6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </span>
-              </button>
+  PUBLISH NOW
+  <span className="cup-primary-ico" aria-hidden="true">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M5 12h12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13 6l6 6-6 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  </span>
+</button>
             </div>
           </div>
 

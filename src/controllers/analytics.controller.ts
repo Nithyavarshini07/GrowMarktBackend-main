@@ -1147,22 +1147,9 @@ export const getPerformanceNodes = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    console.log("User ID:", req.userId);
-console.log("Filters:", filters);
-
-const totalPosts = await GeneratedPost.countDocuments({});
-console.log("Total Posts:", totalPosts);
-
-const publishedPosts = await GeneratedPost.countDocuments({
-  status: "published",
-});
-console.log("Published Posts:", publishedPosts);
-
-const userPosts = await GeneratedPost.countDocuments({
-  userId: req.userId,
-});
-console.log("User Posts:", userPosts);
     if (!req.userId) throw new UnauthorizedError();
+    
+    // ✅ MOVE THESE LINES UP (before the console.log)
     const { page, limit, skip } = parsePagination(req.query);
     const { mongoSort, sortMeta } = parseSort(
       req.query,
@@ -1174,6 +1161,7 @@ console.log("User Posts:", userPosts);
     const rangeStart = parseRangeToStartDate(
       typeof req.query.range === "string" ? req.query.range : "30d",
     );
+    
     const filters: any = { userId: req.userId, status: "published" };
     if (rangeStart) {
       filters.publishedAt = { $gte: rangeStart };
@@ -1181,6 +1169,23 @@ console.log("User Posts:", userPosts);
     if (typeof req.query.platform === "string" && req.query.platform !== "all") {
       filters.platform = req.query.platform;
     }
+
+    // ✅ NOW you can log these (filters is defined)
+    console.log("User ID:", req.userId);
+    console.log("Filters:", filters);
+
+    const totalPosts = await GeneratedPost.countDocuments({});
+    console.log("Total Posts:", totalPosts);
+
+    const publishedPosts = await GeneratedPost.countDocuments({
+      status: "published",
+    });
+    console.log("Published Posts:", publishedPosts);
+
+    const userPosts = await GeneratedPost.countDocuments({
+      userId: req.userId,
+    });
+    console.log("User Posts:", userPosts);
 
     const [total, rows] = await Promise.all([
       GeneratedPost.countDocuments(filters),
@@ -1190,7 +1195,6 @@ console.log("User Posts:", userPosts);
         .limit(limit)
         .lean(),
     ]);
-    
 
     const threshold = rows.length > 0 ? rows[0] as any : null;
     const topEngagement = threshold ? Number(threshold.engagementRate || 0) : 0;
@@ -1205,7 +1209,7 @@ console.log("User Posts:", userPosts);
         engagementRate: er,
         reach: Number((p as any).reach || 0),
         mediaUrl: (p as any).mediaUrls?.[0] || null,
-        isTopPerformer: er > 0 && er >= topEngagement * 0.8, // Top 20% relative to local max
+        isTopPerformer: er > 0 && er >= topEngagement * 0.8,
       };
     });
 

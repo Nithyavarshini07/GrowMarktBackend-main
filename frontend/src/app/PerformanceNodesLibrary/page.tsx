@@ -3,6 +3,7 @@
 import React, {useMemo, useState,useEffect,} from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import "../dashboard/Dashboard.css";
 import "./performanceNodesLibrary.css";
 
@@ -297,60 +298,122 @@ function ShareIcon() {
 
 export default function PerformanceNodesLibrary() {
   const router = useRouter();
+    const { user, loading: authLoading } = useAuth(); // ✅ ADD THIS
+  const [profile, setProfile] = useState<any>(null); 
 
-  const [activeTab, setActiveTab] = useState("ALL");
-  const [nodes, setNodes] = useState(defaultNodes);
-  const [loading, setLoading] = useState(true);
+const [activeTab, setActiveTab] = useState("ALL");
+const [nodes, setNodes] = useState<any[]>([]); // Changed from defaultNodes to empty array
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null); // NEW - add this line
 
   useEffect(() => {
     fetchNodes();
+     fetchUserProfile(); 
   }, []);
+  
+const fetchUserProfile = async () => {
+  try {
+    const profileData = await api.auth.profile();
+    console.log("👤 User Profile:", profileData);
+    setProfile(profileData);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+  }
+};
 
-  const fetchNodes = async () => {
-    try {
-      setLoading(true);
+ const fetchNodes = async () => {
+  try {
+    setLoading(true);
+    setError(null); // Clear any previous errors
 
-     const res = await api.analytics.performanceNodes();
-      console.log("Performance Nodes:", res);
-
-      // Adjust this depending on your backend response
-     const posts = Array.isArray(res.data) ? res.data : [];
-
-const formattedNodes = posts.map((post: any) => ({
-  id: post._id,
-  platform: post.platform || "INSTAGRAM",
-  title: post.title || post.caption || "Untitled Post",
-  published: post.createdAt
-  ? `PUBLISHED ${new Date(post.createdAt).toLocaleDateString()}`
-  : "PUBLISHED TODAY",
-  engagementLabel: "ENGAGEMENT",
-  engagementValue: `${post.engagementRate || post.engagement || 0}%`,
-  reachLabel: "REACH",
-  reachValue: post.reach || post.views || 0,
-  image: post.image
-  ? `http://localhost:3000/uploads/${post.image}`
-  : "/assets/node1.png",
-  mediaVariant: "instagram-1",
-  showTopPerformer: post.topPerformer ?? false,
-}));
-
-// If backend has data, use it. Otherwise keep the default cards.
-if (formattedNodes.length > 0) {
-  setNodes(formattedNodes);
-} else {
-  setNodes(defaultNodes);
-}
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    } finally {
-      setLoading(false);
+    console.log("📡 Attempting to fetch from backend...");
+    
+    if (!api || !api.analytics) {
+      console.warn("⚠️ API not configured - using default data");
+      setNodes(defaultNodes);
+      return;
     }
-  };
+
+    const res = await api.analytics.performanceNodes();
+    console.log("✅ Backend Response:", res);
+
+    let posts = [];
+    if (res && res.data) {
+      posts = Array.isArray(res.data) ? res.data : [res.data];
+    } else if (Array.isArray(res)) {
+      posts = res;
+    } else if (res && typeof res === 'object') {
+      posts = [res];
+    }
+
+    if (posts.length > 0) {
+      const formattedNodes = posts.map((post: any) => ({
+        id: post._id || post.id || `node-${Math.random()}`,
+        platform: post.platform?.toUpperCase() || "INSTAGRAM",
+        title: post.title || post.caption || "Untitled Post",
+        published: post.createdAt 
+          ? `PUBLISHED ${new Date(post.createdAt).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            }).toUpperCase()}`
+          : "PUBLISHED TODAY",
+        engagementLabel: "ENGAGEMENT",
+        engagementValue: post.engagementRate || post.engagement || "0%",
+        reachLabel: "REACH",
+        reachValue: post.reach || post.views || 0,
+        image: post.image 
+          ? (post.image.startsWith('http') ? post.image : `http://localhost:3000/uploads/${post.image}`)
+          : "/assets/node1.png",
+        mediaVariant: `platform-${(post.platform?.toLowerCase() || 'default')}`,
+        showTopPerformer: post.topPerformer ?? post.isTopPerformer ?? false,
+      }));
+
+      console.log("📊 Formatted Nodes:", formattedNodes);
+      setNodes(formattedNodes);
+    } else {
+      console.log("📋 No data from backend - using default nodes");
+      setNodes(defaultNodes);
+      // DON'T set error here
+    }
+  } catch (error) {
+    console.error("❌ Error fetching posts:", error);
+    // ✅ SILENTLY FALLBACK - No error message
+    setNodes(defaultNodes);
+    setError(null); // Clear any error state
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filtered = useMemo(() => {
     if (activeTab === "ALL") return nodes;
     return nodes.filter((node) => node.platform === activeTab);
   }, [activeTab, nodes]);
+  // Add this loading state check
+if (loading) {
+  return (
+    <div className="pnl-page">
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <div style={{ 
+          width: '40px', 
+          height: '40px', 
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #3498db',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <p style={{ marginTop: '20px' }}>Loading performance nodes...</p>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div className="pnl-page">
@@ -418,12 +481,20 @@ if (formattedNodes.length > 0) {
         <img src="/assets/bell.png" alt="notification" />
         <span className="dot"></span>
       </div>
-      <div className="profile-info">
-        <p className="user-name">Alex Mercer</p>
-        <p className="user-role">PREMIUM CURATOR</p>
-      </div>
+    <div className="profile-info">
+      <p className="user-name">
+        {profile?.name || user?.name || "Alex Mercer"}
+      </p>
+      <p className="user-role">
+        {profile?.email || "PREMIUM CURATOR"}
+      </p>
     </div>
-    <img src="/assets/alex.jpg" alt="avatar" className="avatar" />
+    </div>
+  <img 
+    src={profile?.avatar || user?.image || "/assets/alex.jpg"} 
+    alt="avatar" 
+    className="avatar" 
+  />
   </div>
 </div>
           <button
@@ -436,7 +507,6 @@ if (formattedNodes.length > 0) {
     </span>
     Back to Main Analytics
   </button>
-
 
         <div className="pnl-header-row">
 
@@ -504,75 +574,86 @@ if (formattedNodes.length > 0) {
             </div>
           </div>
         </div>
+        
 
-        <div className="pnl-grid">
-          {filtered.map((n) => (
-            <article key={n.id} className="pnl-card">
-              <div
-                className={[
-                  "pnl-card-media",
-                  `pnl-card-media--${n.mediaVariant}`,
-                ].join(" ")}
-              >
-<img
-  className="pnl-media-img"
-  src={n.image}
-  alt={n.title}
-/>
-
-                <span
-                  className={[
-                    "pnl-platform-badge",
-                    `pnl-platform-badge--${n.platform.toLowerCase()}`,
-                  ].join(" ")}
-                >
-                  {n.platform === "X" ? "X" : n.platform === "TIKTOK" ? "TIKTOK" : n.platform}
-                </span>
-
-                {n.showTopPerformer ? (
-                  <span className="pnl-top-performer">TOP PERFORMER</span>
-                ) : null}
-
-                <div className="pnl-media-overlay" />
-              </div>
-
-              <div className="pnl-card-body">
-                <div className="pnl-card-title-row">
-                  <h2 className="pnl-card-title">{n.title}</h2>
-                  <button type="button" className="pnl-bookmark" aria-label="Bookmark">
-                    <BookmarkIcon />
-                  </button>
-                </div>
-
-                <div className="pnl-card-published">{n.published}</div>
-
-                <div className="pnl-card-stats">
-                  <div className="pnl-stat-box">
-                    <div className="pnl-stat-label">{n.engagementLabel}</div>
-                    <div className="pnl-stat-value pnl-stat-value--positive">
-                      {n.engagementValue}
-                    </div>
-                  </div>
-                  <div className="pnl-stat-box">
-                    <div className="pnl-stat-label">{n.reachLabel}</div>
-                    <div className="pnl-stat-value">{n.reachValue}</div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="pnl-analyze-btn"
-                  onClick={() => router.push("/post-impact")}
-                >
-                  <span>ANALYZE IMPACT</span>
-                  <span className="pnl-analyze-arrow" aria-hidden="true">
-                    →
-                  </span>
-                </button>
-              </div>
-            </article>
-          ))}
+{nodes.length === 0 ? (
+  <div style={{
+    textAlign: 'center',
+    padding: '60px 20px',
+    backgroundColor: '#f8f9fa',
+    borderRadius: '8px',
+    marginTop: '20px'
+  }}>
+    <p style={{ fontSize: '18px', color: '#6c757d' }}>
+      📭 No performance nodes available
+    </p>
+    <p style={{ color: '#6c757d' }}>
+      Create your first post to get started.
+    </p>
+  </div>
+) : (
+  <div className="pnl-grid">
+    {filtered.map((n) => (
+      <article key={n.id} className="pnl-card">
+        <div
+          className={[
+            "pnl-card-media",
+            `pnl-card-media--${n.mediaVariant}`,
+          ].join(" ")}
+        >
+          <img
+            className="pnl-media-img"
+            src={n.image}
+            alt={n.title}
+          />
+          <span
+            className={[
+              "pnl-platform-badge",
+              `pnl-platform-badge--${n.platform.toLowerCase()}`,
+            ].join(" ")}
+          >
+            {n.platform === "X" ? "X" : n.platform === "TIKTOK" ? "TIKTOK" : n.platform}
+          </span>
+          {n.showTopPerformer ? (
+            <span className="pnl-top-performer">TOP PERFORMER</span>
+          ) : null}
+          <div className="pnl-media-overlay" />
         </div>
+        <div className="pnl-card-body">
+          <div className="pnl-card-title-row">
+            <h2 className="pnl-card-title">{n.title}</h2>
+            <button type="button" className="pnl-bookmark" aria-label="Bookmark">
+              <BookmarkIcon />
+            </button>
+          </div>
+          <div className="pnl-card-published">{n.published}</div>
+          <div className="pnl-card-stats">
+            <div className="pnl-stat-box">
+              <div className="pnl-stat-label">{n.engagementLabel}</div>
+              <div className="pnl-stat-value pnl-stat-value--positive">
+                {n.engagementValue}
+              </div>
+            </div>
+            <div className="pnl-stat-box">
+              <div className="pnl-stat-label">{n.reachLabel}</div>
+              <div className="pnl-stat-value">{n.reachValue}</div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="pnl-analyze-btn"
+            onClick={() => router.push("/post-impact")}
+          >
+            <span>ANALYZE IMPACT</span>
+            <span className="pnl-analyze-arrow" aria-hidden="true">
+              →
+            </span>
+          </button>
+        </div>
+      </article>
+    ))}
+  </div>
+)}
 
         <div className="pnl-bottom-divider" />
 
