@@ -3,12 +3,14 @@
 import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context"; 
 import "./createUnifiedPost.css";
 
 
 
 export default function CreateUnifiedPost() {
   const router = useRouter();
+  const { user } = useAuth();
   const [selectedChannel, setSelectedChannel] = useState("share");
   const [scheduleEnabled, setScheduleEnabled] = useState(true);
   
@@ -20,6 +22,24 @@ const [previews, setPreviews] = useState<string[]>([]);
 const [startDate, setStartDate] = useState("");
 const [endDate, setEndDate] = useState("");
 const [loading, setLoading] = useState(false);
+
+// Add this function
+const uploadImages = async (files: File[]) => {
+  const formData = new FormData();
+  files.forEach(file => formData.append('images', file));
+  
+  const response = await fetch('/api/v1/upload', {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to upload images');
+  }
+  
+  const result = await response.json();
+  return result.urls || result.data || [];
+};
 
   const channelButtons = useMemo(
     () => [
@@ -163,7 +183,7 @@ const handlePublish = async () => {
   try {
     setLoading(true);
 
-    // ✅ Validate required fields
+    // ✅ Validations
     if (!campaignName.trim()) {
       alert("Please enter a campaign name");
       setLoading(false);
@@ -188,44 +208,69 @@ const handlePublish = async () => {
       return;
     }
 
-    // ✅ Prepare the data
-    const campaignData = {
-      name: campaignName.trim(),
-      objective: content.trim(),
-      startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString(),
-      channels: [selectedChannel],
-      feedSummary: content.trim(),
-      images: previews || [],
-      // Add status
-      status: "DRAFT"
+    const channelMap: Record<string, string> = {
+      share: "linkedin",
+      camera: "instagram", 
+      link: "facebook",
+      globe: "twitter",
+      video: "instagram"
     };
 
-    console.log("📤 Sending campaign data:", campaignData);
+    // ✅ Prepare data WITHOUT images
+ const campaignData = {
+  name: campaignName.trim(),
+  objective: "reach", // ✅ Use a valid enum value
+  feedSummary: content.trim(), // ✅ Put content here instead
+  startDate: new Date(startDate).toISOString(),
+  endDate: new Date(endDate).toISOString(),
+  channels: [channelMap[selectedChannel] || "linkedin"],
+  status: "DRAFT",
+  targetReach: 0,
+  targetCount: 0,
+  targetEngagementRate: 0,
+  goalLabel: campaignName.trim(),
+  collaborators: []
+};
 
-    await api.campaigns.create(campaignData);
+    console.log("📤 Sending campaign data:", JSON.stringify(campaignData, null, 2));
+
+    const response = await api.campaigns.create(campaignData);
+    console.log("✅ Campaign created:", response);
 
     // ✅ Handle schedule if enabled
     if (scheduleEnabled && scheduledAt) {
-      await api.schedule.create({
-        platform: selectedChannel,
-        content: content.trim(),
-        scheduledAt: new Date(scheduledAt).toISOString(),
-        campaignName: campaignName.trim()
-      });
+      try {
+        await api.schedule.create({
+          platform: channelMap[selectedChannel] || "linkedin",
+          content: content.trim(),
+          scheduledAt: new Date(scheduledAt).toISOString(),
+          campaignName: campaignName.trim()
+        });
+        console.log("✅ Schedule created");
+      } catch (scheduleError) {
+        console.warn("⚠️ Schedule creation failed:", scheduleError);
+      }
     }
 
     alert("✅ Campaign Created Successfully!");
     router.push("/campaign-timeline");
   } catch (error: any) {
     console.error("❌ Error creating campaign:", error);
-    console.error("Error details:", error.response?.data || error.message);
-    alert(`Failed to create campaign: ${error.message || "Unknown error"}`);
+    
+    let errorMessage = "Unknown error";
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    alert(`Failed to create campaign: ${errorMessage}`);
   } finally {
     setLoading(false);
   }
 };
-
   return (
     <div className="cup-page">
       <div className="cup-topbar">
@@ -451,17 +496,41 @@ e.target.value = "";
   className="cup-linkbtn"
   type="button"
   onClick={async () => {
-    await api.campaigns.create({
-      name: campaignName,
-      objective: content,
-      startDate,
-      endDate,
-      status: "DRAFT",
-      channels: [selectedChannel],
-      feedSummary: content,
-    });
+    try {
+      if (!campaignName.trim()) {
+        alert("Please enter a campaign name");
+        return;
+      }
 
-    alert("Draft Saved");
+      const channelMap: Record<string, string> = {
+        share: "linkedin",
+        camera: "instagram",
+        link: "facebook",
+        globe: "twitter",
+        video: "instagram"
+      };
+
+      const draftData = {
+  name: campaignName.trim(),
+  objective: "reach", // ✅ Valid enum value
+  feedSummary: content.trim() || "No summary",
+  startDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+  endDate: endDate ? new Date(endDate).toISOString() : new Date().toISOString(),
+  channels: [channelMap[selectedChannel] || "linkedin"],
+  status: "DRAFT",
+  targetReach: 0,
+  targetCount: 0,
+  targetEngagementRate: 0
+};
+
+      console.log("📤 Saving draft:", JSON.stringify(draftData, null, 2));
+      await api.campaigns.create(draftData);
+      alert("✅ Draft Saved Successfully!");
+      router.push("/campaign-timeline");
+    } catch (error: any) {
+      console.error("Error saving draft:", error);
+      alert(`Failed to save draft: ${error.message}`);
+    }
   }}
 >
   SAVE DRAFT
