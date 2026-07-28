@@ -216,21 +216,34 @@ const handlePublish = async () => {
       video: "instagram"
     };
 
-    // ✅ Prepare data WITHOUT images
- const campaignData = {
-  name: campaignName.trim(),
-  objective: "reach", // ✅ Use a valid enum value
-  feedSummary: content.trim(), // ✅ Put content here instead
-  startDate: new Date(startDate).toISOString(),
-  endDate: new Date(endDate).toISOString(),
-  channels: [channelMap[selectedChannel] || "linkedin"],
-  status: "DRAFT",
-  targetReach: 0,
-  targetCount: 0,
-  targetEngagementRate: 0,
-  goalLabel: campaignName.trim(),
-  collaborators: []
-};
+    // ✅ NEW: Upload images if any exist
+    let uploadedImageUrls: string[] = [];
+    if (images.length > 0) {
+      try {
+        uploadedImageUrls = await uploadImages(images);
+        console.log("✅ Images uploaded:", uploadedImageUrls);
+      } catch (uploadError) {
+        console.warn("⚠️ Image upload failed:", uploadError);
+        // Continue without images - don't block campaign creation
+      }
+    }
+
+    // ✅ Prepare data WITH uploaded images
+    const campaignData = {
+      name: campaignName.trim(),
+      objective: "reach",
+      feedSummary: content.trim(),
+      startDate: new Date(startDate).toISOString(),
+      endDate: new Date(endDate).toISOString(),
+      channels: [channelMap[selectedChannel] || "linkedin"],
+      images: uploadedImageUrls,  // ✅ NOW USING UPLOADED IMAGES
+      status: "DRAFT",
+      targetReach: 0,
+      targetCount: 0,
+      targetEngagementRate: 0,
+      goalLabel: campaignName.trim(),
+      collaborators: []
+    };
 
     console.log("📤 Sending campaign data:", JSON.stringify(campaignData, null, 2));
 
@@ -510,18 +523,30 @@ e.target.value = "";
         video: "instagram"
       };
 
+      // ✅ NEW: Upload images for draft too
+      let uploadedImageUrls: string[] = [];
+      if (images.length > 0) {
+        try {
+          uploadedImageUrls = await uploadImages(images);
+          console.log("✅ Images uploaded for draft:", uploadedImageUrls);
+        } catch (uploadError) {
+          console.warn("⚠️ Image upload failed for draft:", uploadError);
+        }
+      }
+
       const draftData = {
-  name: campaignName.trim(),
-  objective: "reach", // ✅ Valid enum value
-  feedSummary: content.trim() || "No summary",
-  startDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
-  endDate: endDate ? new Date(endDate).toISOString() : new Date().toISOString(),
-  channels: [channelMap[selectedChannel] || "linkedin"],
-  status: "DRAFT",
-  targetReach: 0,
-  targetCount: 0,
-  targetEngagementRate: 0
-};
+        name: campaignName.trim(),
+        objective: "reach",
+        feedSummary: content.trim() || "No summary",
+        startDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+        endDate: endDate ? new Date(endDate).toISOString() : new Date().toISOString(),
+        channels: [channelMap[selectedChannel] || "linkedin"],
+        images: uploadedImageUrls,  // ✅ NOW USING UPLOADED IMAGES
+        status: "DRAFT",
+        targetReach: 0,
+        targetCount: 0,
+        targetEngagementRate: 0
+      };
 
       console.log("📤 Saving draft:", JSON.stringify(draftData, null, 2));
       await api.campaigns.create(draftData);

@@ -73,41 +73,41 @@ const [monthlyObjective, setMonthlyObjective] = useState<MonthlyObjective | null
 const [profile, setProfile] = useState<any>(null);
   const [search, setSearch] = useState("");
 
-  const draftPosts = posts.filter(
-    (post) => post.status?.toUpperCase() === "DRAFT"
-  );
+const draftPosts = posts?.filter(
+  (post) => post.status?.toLowerCase() === "draft"
+) || [];
 
-  const publishedPosts = posts.filter(
-    (post) => post.status?.toUpperCase() === "PUBLISHED"
-  );
+const publishedPosts = posts?.filter(
+  (post) => post.status?.toLowerCase() === "published"
+) || [];
 
-  const scheduledCampaigns = campaigns.filter(
-    (c) => c.status?.toUpperCase() === "SCHEDULED"
-  );
+const scheduledCampaigns = campaigns?.filter(
+  (c) => c.status?.toLowerCase() === "scheduled"
+) || [];
 
-  const activeCampaigns = campaigns.filter(
-    (c) =>
-      c.status?.toUpperCase() === "LIVE" ||
-      c.status?.toUpperCase() === "ACTIVE"
-  );
+const activeCampaigns = campaigns?.filter(
+  (c) =>
+    c.status?.toLowerCase() === "live" ||
+    c.status?.toLowerCase() === "active"
+) || [];
 
-  const filteredDraftPosts = draftPosts.filter((post) =>
-    (post.title || post.headline || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+const filteredDraftPosts = draftPosts.filter((post) =>
+  (post.title || post.headline || "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+);
 
-  const filteredScheduledCampaigns = scheduledCampaigns.filter((campaign) =>
-    (campaign.name || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+const filteredScheduledCampaigns = scheduledCampaigns?.filter((campaign) =>
+  (campaign.name || "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+) || [];
 
-  const filteredPublishedPosts = publishedPosts.filter((post) =>
-    (post.title || post.headline || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+const filteredPublishedPosts = publishedPosts?.filter((post) =>
+  (post.title || post.headline || "")
+    .toLowerCase()
+    .includes(search.toLowerCase())
+) || [];
 
 
   useEffect(() => {
@@ -981,8 +981,9 @@ return (
 
           <div className="settings-feed-meta">
 <div className="settings-feed-title">
-  {post.title || post.headline}
+  {post.headline || post.title || "Untitled Post"}
 </div>
+
 
             <div className="settings-feed-sub">
                 {post.description || post.content}
@@ -990,9 +991,9 @@ return (
           </div>
         </div>
 
-        <div className="settings-feed-tag settings-tag-draft">
-          {post.status}
-        </div>
+<div className="settings-feed-tag settings-tag-draft">
+  {post.status?.toUpperCase() || "DRAFT"}  {/* ← Shows "DRAFT" in uppercase */}
+</div>
       </div>
 
       <div className="settings-feed-foot">
@@ -1047,9 +1048,9 @@ return (
           </div>
         </div>
 
-        <div className="settings-feed-tag settings-tag-scheduled">
-          {campaign.status}
-        </div>
+<div className="settings-feed-tag settings-tag-scheduled">
+  {campaign.status?.toUpperCase() || "DRAFT"}  {/* ← Shows "DRAFT" in uppercase */}
+</div>
       </div>
 
 <img
@@ -1097,7 +1098,7 @@ return (
 
           <div className="settings-feed-meta">
 <div className="settings-feed-title">
-  {post.title || post.headline}
+  {post.headline || post.title || "Untitled Post"}
 </div>
           </div>
         </div>
